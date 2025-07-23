@@ -92,6 +92,7 @@ if ($seconds_until_next_turn < 0) { $seconds_until_next_turn = 0; }
 $minutes_until_next_turn = floor($seconds_until_next_turn / 60);
 $seconds_remainder = $seconds_until_next_turn % 60;
 
+$active_page = 'dashboard.php'; // Set active page for navigation
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -107,79 +108,62 @@ $seconds_remainder = $seconds_until_next_turn % 60;
 <body class="text-gray-400 antialiased">
     <div class="min-h-screen bg-cover bg-center bg-fixed" style="background-image: url('https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%D%D&auto=format&fit=crop&w=1742&q=80');">
         <div class="container mx-auto p-4 md:p-8">
-            <header class="text-center mb-4">
-                <h1 class="text-5xl font-title text-cyan-400" style="text-shadow: 0 0 8px rgba(6, 182, 212, 0.7);">STELLAR DOMINION</h1>
-            </header>
+            
+            <?php include_once 'navigation.php'; ?>
 
-            <div class="main-bg border border-gray-700 rounded-lg shadow-2xl p-1">
-                <!-- Main Navigation -->
-                <nav class="flex justify-center space-x-4 md:space-x-8 bg-gray-900 p-3 rounded-t-md">
-                    <a href="dashboard.php" class="nav-link active font-bold px-3 py-1 transition-all">HOME</a>
-                    <a href="battle.php" class="nav-link text-gray-400 hover:text-white px-3 py-1 transition-all">BATTLE</a>
-                    <a href="structures.php" class="nav-link text-gray-400 hover:text-white px-3 py-1 transition-all">STRUCTURES</a>
-                    <a href="#" class="nav-link text-gray-400 hover:text-white px-3 py-1 transition-all">COMMUNITY</a>
-                    <a href="logout.php" class="nav-link text-gray-400 hover:text-white px-3 py-1 transition-all">SIGN OUT</a>
-                </nav>
-                
-                <!-- Sub-Navigation -->
-                <div class="bg-gray-800 text-center p-2">
-                    <a href="dashboard.php" class="font-semibold text-white px-3">Dashboard</a>
-                    <a href="levels.php" class="text-gray-400 hover:text-white px-3">Levels</a>
-                </div>
+            <!-- Main Content Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 p-4">
+                <!-- Left Sidebar -->
+                <aside class="lg:col-span-1 space-y-4">
+                    <div class="content-box rounded-lg p-4">
+                        <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-2">A.I. Advisor</h3>
+                        <p class="text-sm">Your central command hub. Monitor your resources and fleet status from here.</p>
+                    </div>
+                    <div class="content-box rounded-lg p-4">
+                        <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-3">Stats</h3>
+                        <ul class="space-y-2 text-sm">
+                            <li class="flex justify-between"><span>Credits:</span> <span class="text-white font-semibold"><?php echo number_format($character_data['credits']); ?></span></li>
+                            <li class="flex justify-between"><span>Untrained Citizens:</span> <span class="text-white font-semibold"><?php echo number_format($character_data['untrained_citizens']); ?></span></li>
+                            <li class="flex justify-between"><span>Level:</span> <span class="text-white font-semibold"><?php echo $character_data['level']; ?></span></li>
+                            <li class="flex justify-between"><span>Attack Turns:</span> <span class="text-white font-semibold"><?php echo $character_data['attack_turns']; ?></span></li>
+                            <li class="flex justify-between border-t border-gray-600 pt-2 mt-2"><span>Next Turn In:</span> <span id="next-turn-timer" class="text-cyan-300 font-bold"><?php echo sprintf('%02d:%02d', $minutes_until_next_turn, $seconds_remainder); ?></span></li>
+                            <li class="flex justify-between"><span>Dominion Time:</span> <span id="dominion-time" class="text-white font-semibold"><?php echo $now->format('H:i:s'); ?></span></li>
+                        </ul>
+                    </div>
+                </aside>
 
-                <!-- Main Content Grid -->
-                <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 p-4">
-                    <!-- Left Sidebar -->
-                    <aside class="lg:col-span-1 space-y-4">
+                <!-- Center Content -->
+                <main class="lg:col-span-3 space-y-4">
+                    <div class="content-box rounded-lg p-4 text-center">
+                        <p class="font-semibold text-cyan-300">Welcome, Commander <?php echo htmlspecialchars($character_data['character_name']); ?> - <?php echo htmlspecialchars(strtoupper($character_data['race'])); ?> <?php echo htmlspecialchars(strtoupper($character_data['class'])); ?></p>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Dominion Stats -->
                         <div class="content-box rounded-lg p-4">
-                            <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-2">A.I. Advisor</h3>
-                            <p class="text-sm">Your central command hub. Monitor your resources and fleet status from here.</p>
-                        </div>
-                        <div class="content-box rounded-lg p-4">
-                            <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-3">Stats</h3>
+                            <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-3">Dominion Stats</h3>
                             <ul class="space-y-2 text-sm">
-                                <li class="flex justify-between"><span>Credits:</span> <span class="text-white font-semibold"><?php echo number_format($character_data['credits']); ?></span></li>
-                                <li class="flex justify-between"><span>Untrained Citizens:</span> <span class="text-white font-semibold"><?php echo number_format($character_data['untrained_citizens']); ?></span></li>
-                                <li class="flex justify-between"><span>Level:</span> <span class="text-white font-semibold"><?php echo $character_data['level']; ?></span></li>
-                                <li class="flex justify-between"><span>Attack Turns:</span> <span class="text-white font-semibold"><?php echo $character_data['attack_turns']; ?></span></li>
-                                <li class="flex justify-between border-t border-gray-600 pt-2 mt-2"><span>Next Turn In:</span> <span id="next-turn-timer" class="text-cyan-300 font-bold"><?php echo sprintf('%02d:%02d', $minutes_until_next_turn, $seconds_remainder); ?></span></li>
-                                <li class="flex justify-between"><span>Dominion Time:</span> <span id="dominion-time" class="text-white font-semibold"><?php echo $now->format('H:i:s'); ?></span></li>
+                                <li class="flex justify-between"><span>Workers:</span> <span class="text-white font-semibold"><?php echo number_format($character_data['workers']); ?></span></li>
+                                <li class="flex justify-between"><span>Income per Turn:</span> <span class="text-white font-semibold"><?php echo number_format($credits_per_turn); ?></span></li>
+                                <li class="flex justify-between"><span>Net Worth:</span> <span class="text-white font-semibold"><?php echo number_format($character_data['net_worth']); ?></span></li>
+                                <li class="flex justify-between"><span>Fortification:</span> <span class="text-white font-semibold"><?php echo number_format($fortification); ?></span></li>
+                                <li class="flex justify-between"><span>Infiltration:</span> <span class="text-white font-semibold"><?php echo number_format($infiltration); ?></span></li>
                             </ul>
                         </div>
-                    </aside>
-
-                    <!-- Center Content -->
-                    <main class="lg:col-span-3 space-y-4">
-                        <div class="content-box rounded-lg p-4 text-center">
-                            <p class="font-semibold text-cyan-300">Welcome, Commander <?php echo htmlspecialchars($character_data['character_name']); ?> - <?php echo htmlspecialchars(strtoupper($character_data['race'])); ?> <?php echo htmlspecialchars(strtoupper($character_data['class'])); ?></p>
+                        <!-- Fleet Stats -->
+                        <div class="content-box rounded-lg p-4">
+                            <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-3">Fleet Stats</h3>
+                            <ul class="space-y-2 text-sm">
+                                <li class="flex justify-between"><span>Soldiers:</span> <span class="text-white font-semibold"><?php echo number_format($character_data['soldiers']); ?></span></li>
+                                <li class="flex justify-between"><span>Guards:</span> <span class="text-white font-semibold"><?php echo number_format($character_data['guards']); ?></span></li>
+                                <li class="flex justify-between"><span>Offense Power:</span> <span class="text-white font-semibold"><?php echo number_format($offense_power); ?></span></li>
+                                <li class="flex justify-between"><span>Defense Rating:</span> <span class="text-white font-semibold"><?php echo number_format($defense_rating); ?></span></li>
+                            </ul>
                         </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- Dominion Stats -->
-                            <div class="content-box rounded-lg p-4">
-                                <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-3">Dominion Stats</h3>
-                                <ul class="space-y-2 text-sm">
-                                    <li class="flex justify-between"><span>Workers:</span> <span class="text-white font-semibold"><?php echo number_format($character_data['workers']); ?></span></li>
-                                    <li class="flex justify-between"><span>Income per Turn:</span> <span class="text-white font-semibold"><?php echo number_format($credits_per_turn); ?></span></li>
-                                    <li class="flex justify-between"><span>Net Worth:</span> <span class="text-white font-semibold"><?php echo number_format($character_data['net_worth']); ?></span></li>
-                                    <li class="flex justify-between"><span>Fortification:</span> <span class="text-white font-semibold"><?php echo number_format($fortification); ?></span></li>
-                                    <li class="flex justify-between"><span>Infiltration:</span> <span class="text-white font-semibold"><?php echo number_format($infiltration); ?></span></li>
-                                </ul>
-                            </div>
-                            <!-- Fleet Stats -->
-                            <div class="content-box rounded-lg p-4">
-                                <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-3">Fleet Stats</h3>
-                                <ul class="space-y-2 text-sm">
-                                    <li class="flex justify-between"><span>Soldiers:</span> <span class="text-white font-semibold"><?php echo number_format($character_data['soldiers']); ?></span></li>
-                                    <li class="flex justify-between"><span>Guards:</span> <span class="text-white font-semibold"><?php echo number_format($character_data['guards']); ?></span></li>
-                                    <li class="flex justify-between"><span>Offense Power:</span> <span class="text-white font-semibold"><?php echo number_format($offense_power); ?></span></li>
-                                    <li class="flex justify-between"><span>Defense Rating:</span> <span class="text-white font-semibold"><?php echo number_format($defense_rating); ?></span></li>
-                                </ul>
-                            </div>
-                        </div>
-                    </main>
-                </div>
+                    </div>
+                </main>
             </div>
+            </div> <!-- This closes the .main-bg div from navigation.php -->
         </div>
     </div>
     <script>
