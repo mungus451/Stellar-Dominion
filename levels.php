@@ -50,10 +50,7 @@ $active_page = 'levels.php'; // Set active page for navigation
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 p-4">
                 <!-- Left Sidebar -->
                 <aside class="lg:col-span-1 space-y-4">
-                     <div class="content-box rounded-lg p-4">
-                        <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-2">A.I. Advisor</h3>
-                        <p class="text-sm">Spend proficiency points to permanently enhance your dominion's capabilities.</p>
-                    </div>
+                    <?php include 'advisor.php'; ?>
                     <div class="content-box rounded-lg p-4">
                         <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-3">Stats</h3>
                         <ul class="space-y-2 text-sm">
