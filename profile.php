@@ -72,8 +72,19 @@ $active_page = 'profile.php';
                 <main class="lg:col-span-3">
                     <form action="lib/update_profile.php" method="POST" enctype="multipart/form-data" class="space-y-4">
                         <?php if(isset($_SESSION['profile_message'])): ?>
-                            <div class="bg-cyan-900 border border-cyan-500/50 text-cyan-300 p-3 rounded-md text-center">
-                                <?php echo $_SESSION['profile_message']; unset($_SESSION['profile_message']); ?>
+                            <?php
+                                // Determine message style based on success or error type
+                                $message_type = $_SESSION['profile_message_type'] ?? 'success';
+                                $message_class = ($message_type === 'error')
+                                    ? 'bg-red-900 border-red-500/50 text-red-300'
+                                    : 'bg-cyan-900 border-cyan-500/50 text-cyan-300';
+                            ?>
+                            <div class="<?php echo $message_class; ?> p-3 rounded-md text-center">
+                                <?php
+                                    echo htmlspecialchars($_SESSION['profile_message']);
+                                    unset($_SESSION['profile_message']);
+                                    unset($_SESSION['profile_message_type']);
+                                ?>
                             </div>
                         <?php endif; ?>
                         <div class="content-box rounded-lg p-4">
