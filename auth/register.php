@@ -1,6 +1,13 @@
 <?php
+// --- START: ADD THESE 3 LINES FOR DEBUGGING ---
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+// --- END: DEBUGGING LINES ---
+
 session_start();
-require_once "../lib/db_config.php";
+// Use a more robust path based on the current file's location
+require_once __DIR__ . "/../lib/db_config.php";
 
 $email = trim($_POST['email']);
 $character_name = trim($_POST['characterName']);
@@ -16,7 +23,6 @@ if(empty($email) || empty($character_name) || empty($password) || empty($race) |
 $password_hash = password_hash($password, PASSWORD_DEFAULT);
 
 // Prepare an insert statement
-// ** CHANGED **: New players now start with 100,000 credits and 1,000 untrained citizens.
 $sql = "INSERT INTO users (email, character_name, password_hash, race, class, credits, untrained_citizens, level_up_points) VALUES (?, ?, ?, ?, ?, 100000, 1000, 1)";
 
 if($stmt = mysqli_prepare($link, $sql)){
