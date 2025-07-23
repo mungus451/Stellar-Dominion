@@ -39,9 +39,9 @@ $advice_repository = [
         "Investing in guards will bolster your empire's defenses."
     ]
     'profile.php' => [
-    "Express yourself. Your avatar and biography are visible to other commanders.",
-    "A picture is worth a thousand words, or in this galaxy, a thousand credits.",
-    "Remember to save your changes after updating your profile."
+        "Express yourself. Your avatar and biography are visible to other commanders.",
+        "A picture is worth a thousand words, or in this galaxy, a thousand credits.",
+        "Remember to save your changes after updating your profile."
     ],
     'settings.php' => [
         "Secure your account by regularly changing your password.",
