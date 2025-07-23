@@ -38,6 +38,16 @@ $advice_repository = [
         "Upgrading soldiers will make your attacks more potent.",
         "Investing in guards will bolster your empire's defenses."
     ]
+    'profile.php' => [
+    "Express yourself. Your avatar and biography are visible to other commanders.",
+    "A picture is worth a thousand words, or in this galaxy, a thousand credits.",
+    "Remember to save your changes after updating your profile."
+    ],
+    'settings.php' => [
+        "Secure your account by regularly changing your password.",
+        "Vacation mode protects your empire from attacks while you are away. Use it wisely.",
+        "Account settings are critical. Double-check your entries before saving."
+    ],
 ];
 
 // Get the appropriate advice for the current page, or provide a default message.
