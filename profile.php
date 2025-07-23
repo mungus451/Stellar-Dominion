@@ -86,7 +86,7 @@ $active_page = 'profile.php';
                                     </div>
                                     <div class="content-box p-4 rounded-lg mt-4">
                                         <h4 class="font-semibold text-white mb-2">New Avatar</h4>
-                                        <p class="text-xs text-gray-500 mb-2">Limits: 450x450, 2MB, JPG/PNG</p>
+                                        <p class="text-xs text-gray-500 mb-2">Limits: 10MB, JPG/PNG</p>
                                         <input type="file" name="avatar" class="text-sm w-full bg-gray-900 border border-gray-600 rounded-md file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-cyan-600 file:text-white hover:file:bg-cyan-700">
                                     </div>
                                 </div>
