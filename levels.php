@@ -1,4 +1,15 @@
 <?php
+/**
+ * levels.php
+ *
+ * This page allows players to spend their "level up points" (proficiency points)
+ * to increase their five core stats: Strength, Constitution, Wealth, Dexterity,
+ * and Charisma. Each point provides a permanent percentage-based bonus.
+ *
+ * The form submission is handled by 'levelup.php'.
+ */
+
+// --- SESSION AND DATABASE SETUP ---
 session_start();
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){ header("location: index.html"); exit; }
 require_once "db_config.php";
@@ -6,7 +17,9 @@ date_default_timezone_set('UTC');
 
 $user_id = $_SESSION['id'];
 
-// Fetch user's stats for the sidebar and main content
+// --- DATA FETCHING ---
+// Fetch all stats related to leveling and the five core proficiency stats.
+// These are needed to display current bonuses and available points.
 $sql = "SELECT credits, untrained_citizens, level, attack_turns, last_updated, experience, level_up_points, strength_points, constitution_points, wealth_points, dexterity_points, charisma_points FROM users WHERE id = ?";
 if($stmt = mysqli_prepare($link, $sql)){
     mysqli_stmt_bind_param($stmt, "i", $user_id);
@@ -17,7 +30,8 @@ if($stmt = mysqli_prepare($link, $sql)){
 }
 mysqli_close($link);
 
-// Calculate time for the timer
+// --- TIMER CALCULATIONS ---
+// This logic calculates the time remaining for the JavaScript countdown timer.
 $turn_interval_minutes = 10;
 $last_updated = new DateTime($user_stats['last_updated'], new DateTimeZone('UTC'));
 $now = new DateTime('now', new DateTimeZone('UTC'));
@@ -28,7 +42,9 @@ if ($seconds_until_next_turn < 0) { $seconds_until_next_turn = 0; }
 $minutes_until_next_turn = floor($seconds_until_next_turn / 60);
 $seconds_remainder = $seconds_until_next_turn % 60;
 
-$active_page = 'levels.php'; // Set active page for navigation
+// --- PAGE IDENTIFICATION ---
+// This variable is used by 'navigation.php' to highlight the correct menu item.
+$active_page = 'levels.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -74,7 +90,7 @@ $active_page = 'levels.php'; // Set active page for navigation
                     </div>
                 </aside>
 
-                <!-- Main Content -->
+                <!-- Main Content: Spend Points Form -->
                 <main class="lg:col-span-3">
                     <form action="levelup.php" method="POST" class="space-y-4">
                         <div class="content-box rounded-lg p-4 text-center">
