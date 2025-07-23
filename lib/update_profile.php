@@ -18,23 +18,21 @@ if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] == 0) {
     $allowed_ext = ['jpg', 'jpeg', 'png', 'gif'];
     $upload_dir = __DIR__ . '/../uploads/avatars/';
     
-    // --- BEGIN CHANGE: Create directory if it doesn't exist ---
     if (!is_dir($upload_dir)) {
         mkdir($upload_dir, 0755, true);
     }
-    // --- END CHANGE ---
 
     $file_name = $_FILES['avatar']['name'];
     $file_ext = strtolower(pathinfo($file_name, PATHINFO_EXTENSION));
 
-    // --- BEGIN CHANGE: Increased file size limit to 10MB ---
     if (in_array($file_ext, $allowed_ext) && $_FILES['avatar']['size'] < 10000000) { // 10MB limit
-    // --- END CHANGE ---
         $new_file_name = 'avatar_' . $user_id . '_' . time() . '.' . $file_ext;
         $destination = $upload_dir . $new_file_name;
 
         if (move_uploaded_file($_FILES['avatar']['tmp_name'], $destination)) {
-            $avatar_path = 'uploads/avatars/' . $new_file_name;
+            // --- BEGIN CHANGE: Store path with leading slash ---
+            $avatar_path = '/uploads/avatars/' . $new_file_name;
+            // --- END CHANGE ---
         }
     }
 }
@@ -67,3 +65,4 @@ try {
 
 header("location: /profile.php");
 exit;
+?>
