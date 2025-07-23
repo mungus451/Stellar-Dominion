@@ -1,4 +1,17 @@
 <?php
+/**
+ * attack.php
+ *
+ * This page is the primary interface for player-versus-player (PvP) combat.
+ * It displays a list of all other players in the game, allowing the current
+ * player to initiate an attack against them.
+ *
+ * Like the dashboard, it includes the "catch-up" mechanism to update the player's
+ * resources upon loading. It also performs a special calculation to estimate the
+ * current credits of potential targets for a more accurate display.
+ */
+
+// --- SESSION AND DATABASE SETUP ---
 session_start();
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){ header("location: index.html"); exit; }
 require_once "db_config.php";
@@ -6,7 +19,9 @@ date_default_timezone_set('UTC');
 
 $user_id = $_SESSION['id'];
 
-// --- START: Process Overdue Turns for Current User ---
+// --- CATCH-UP MECHANISM: PROCESS OVERDUE TURNS ---
+// This is the same logic as dashboard.php to ensure the current player's
+// resources are up-to-date before they perform any actions.
 $sql_check = "SELECT last_updated, workers, wealth_points FROM users WHERE id = ?";
 if($stmt_check = mysqli_prepare($link, $sql_check)) {
     mysqli_stmt_bind_param($stmt_check, "i", $user_id);
@@ -30,13 +45,11 @@ if($stmt_check = mysqli_prepare($link, $sql_check)) {
         if ($turns_to_process > 0) {
             $gained_attack_turns = $turns_to_process * $attack_turns_per_turn;
             $gained_citizens = $turns_to_process * $citizens_per_turn;
-            
             $worker_income = $user_check_data['workers'] * $credits_per_worker;
             $total_base_income = $base_income_per_turn + $worker_income;
             $wealth_bonus = 1 + ($user_check_data['wealth_points'] * 0.01);
             $income_per_turn = floor($total_base_income * $wealth_bonus);
             $gained_credits = $income_per_turn * $turns_to_process;
-            
             $current_utc_time_str = gmdate('Y-m-d H:i:s');
 
             $sql_update = "UPDATE users SET attack_turns = attack_turns + ?, untrained_citizens = untrained_citizens + ?, credits = credits + ?, last_updated = ? WHERE id = ?";
@@ -48,9 +61,10 @@ if($stmt_check = mysqli_prepare($link, $sql_check)) {
         }
     }
 }
-// --- END: Process Overdue Turns ---
+// --- END: CATCH-UP MECHANISM ---
 
-// Fetch user's stats for the sidebar
+// --- DATA FETCHING FOR DISPLAY ---
+// Fetch the current player's stats for the sidebar.
 $sql_user_stats = "SELECT credits, untrained_citizens, level, attack_turns, last_updated FROM users WHERE id = ?";
 $stmt_user_stats = mysqli_prepare($link, $sql_user_stats);
 mysqli_stmt_bind_param($stmt_user_stats, "i", $user_id);
@@ -59,14 +73,14 @@ $user_stats_result = mysqli_stmt_get_result($stmt_user_stats);
 $user_stats = mysqli_fetch_assoc($user_stats_result);
 mysqli_stmt_close($stmt_user_stats);
 
-// Fetch all other users to display as potential targets
+// Fetch all other users to display as potential targets in the main list.
 $sql_targets = "SELECT id, character_name, credits, level, last_updated, workers, wealth_points FROM users WHERE id != ?";
 $stmt_targets = mysqli_prepare($link, $sql_targets);
 mysqli_stmt_bind_param($stmt_targets, "i", $user_id);
 mysqli_stmt_execute($stmt_targets);
 $targets_result = mysqli_stmt_get_result($stmt_targets);
 
-// Calculate time for the timer
+// --- TIMER CALCULATIONS ---
 $turn_interval_minutes = 10;
 $last_updated = new DateTime($user_stats['last_updated'], new DateTimeZone('UTC'));
 $now = new DateTime('now', new DateTimeZone('UTC'));
@@ -77,7 +91,8 @@ if ($seconds_until_next_turn < 0) { $seconds_until_next_turn = 0; }
 $minutes_until_next_turn = floor($seconds_until_next_turn / 60);
 $seconds_remainder = $seconds_until_next_turn % 60;
 
-$active_page = 'attack.php'; // Set active page for navigation
+// --- PAGE IDENTIFICATION ---
+$active_page = 'attack.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -132,7 +147,7 @@ $active_page = 'attack.php'; // Set active page for navigation
                                 <thead class="bg-gray-800">
                                     <tr>
                                         <th class="p-2">Commander</th>
-                                        <th class="p-2">Credits</th>
+                                        <th class="p-2">Credits (Est.)</th>
                                         <th class="p-2">Level</th>
                                         <th class="p-2 text-center">Turns (1-10)</th>
                                         <th class="p-2"></th>
@@ -141,7 +156,10 @@ $active_page = 'attack.php'; // Set active page for navigation
                                 <tbody>
                                     <?php while($target = mysqli_fetch_assoc($targets_result)): ?>
                                     <?php
-                                        // Calculate the target's current credits for display
+                                        // --- TARGET CREDIT ESTIMATION ---
+                                        // To provide a more accurate credit value, we estimate the income the
+                                        // target has earned since their last turn, just like the catch-up mechanism.
+                                        // This gives the attacker a better idea of the potential plunder.
                                         $turn_interval_minutes = 10;
                                         $credits_per_worker = 50;
                                         $base_income_per_turn = 5000;
@@ -165,6 +183,7 @@ $active_page = 'attack.php'; // Set active page for navigation
                                         <td class="p-2 font-bold text-white"><?php echo htmlspecialchars($target['character_name']); ?></td>
                                         <td class="p-2"><?php echo number_format($target_current_credits); ?></td>
                                         <td class="p-2"><?php echo $target['level']; ?></td>
+                                        <!-- Each row is its own form, submitting to process_attack.php -->
                                         <form action="process_attack.php" method="POST">
                                             <input type="hidden" name="defender_id" value="<?php echo $target['id']; ?>">
                                             <td class="p-2 text-center">
