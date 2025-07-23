@@ -1,13 +1,7 @@
 <?php
-// --- START: ADD THESE 3 LINES FOR DEBUGGING ---
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-// --- END: DEBUGGING LINES ---
-
 session_start();
-// Use a more robust path based on the current file's location
-require_once __DIR__ . "/../lib/db_config.php";
+// Correctly require the database configuration from the parent directory's lib folder
+require_once __DIR__ . '/../lib/db_config.php';
 
 $email = trim($_POST['email']);
 $character_name = trim($_POST['characterName']);
