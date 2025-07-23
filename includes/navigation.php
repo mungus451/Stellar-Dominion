@@ -23,7 +23,7 @@ $main_nav_links = [
     'BATTLE' => 'battle.php',
     'STRUCTURES' => 'structures.php',
     'COMMUNITY' => '#', // A placeholder link for a future feature.
-    'SIGN OUT' => 'logout.php'
+    'SIGN OUT' => 'auth/logout.php'
 ];
 
 // Defines the links that appear in the secondary, sub-navigation bar.
