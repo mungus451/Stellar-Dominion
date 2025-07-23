@@ -151,7 +151,7 @@ try {
 } catch (Exception $e) {
     mysqli_rollback($link);
     $_SESSION['attack_result'] = "Attack failed: " . $e->getMessage();
-    header("location: attack.php");
+    header("location: /attack.php");
     exit;
 }
 ?>
