@@ -17,8 +17,6 @@ if($stmt = mysqli_prepare($link, $sql)){
 }
 mysqli_close($link);
 
-$xp_for_next_level = $user_stats['level'] * 1000;
-
 // Calculate time for the timer
 $turn_interval_minutes = 10;
 $last_updated = new DateTime($user_stats['last_updated'], new DateTimeZone('UTC'));
@@ -135,7 +133,54 @@ $active_page = 'levels.php'; // Set active page for navigation
     </div>
     <script>
         lucide.createIcons();
-        // Timer and point calculation scripts
+        const availablePointsEl = document.getElementById('available-points');
+        const totalSpentEl = document.getElementById('total-spent');
+        const inputs = document.querySelectorAll('.point-input');
+        
+        function updateTotal() {
+            let total = 0;
+            inputs.forEach(input => {
+                total += parseInt(input.value) || 0;
+            });
+            totalSpentEl.textContent = total;
+            
+            if (total > parseInt(availablePointsEl.textContent)) {
+                totalSpentEl.classList.add('text-red-500');
+            } else {
+                totalSpentEl.classList.remove('text-red-500');
+            }
+        }
+        
+        inputs.forEach(input => input.addEventListener('input', updateTotal));
+
+        const timerDisplay = document.getElementById('next-turn-timer');
+        let totalSeconds = <?php echo $seconds_until_next_turn; ?>;
+        const interval = setInterval(() => {
+            if (totalSeconds <= 0) {
+                timerDisplay.textContent = "Processing...";
+                clearInterval(interval);
+                setTimeout(() => {
+                    window.location.href = window.location.pathname + '?t=' + new Date().getTime();
+                }, 1500); 
+                return;
+            }
+            totalSeconds--;
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }, 1000);
+
+        const timeDisplay = document.getElementById('dominion-time');
+        let serverTime = new Date();
+        serverTime.setUTCHours(<?php echo $now->format('H'); ?>, <?php echo $now->format('i'); ?>, <?php echo $now->format('s'); ?>);
+
+        setInterval(() => {
+            serverTime.setSeconds(serverTime.getSeconds() + 1);
+            const hours = String(serverTime.getUTCHours()).padStart(2, '0');
+            const minutes = String(serverTime.getUTCMinutes()).padStart(2, '0');
+            const seconds = String(serverTime.getUTCSeconds()).padStart(2, '0');
+            timeDisplay.textContent = `${hours}:${minutes}:${seconds}`;
+        }, 1000);
     </script>
 </body>
 </html>
