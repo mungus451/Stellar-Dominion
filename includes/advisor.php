@@ -37,7 +37,7 @@ $advice_repository = [
         "This is where you can spend points to upgrade your core units.",
         "Upgrading soldiers will make your attacks more potent.",
         "Investing in guards will bolster your empire's defenses."
-    ]
+    ],
     'profile.php' => [
         "Express yourself. Your avatar and biography are visible to other commanders.",
         "A picture is worth a thousand words, or in this galaxy, a thousand credits.",
