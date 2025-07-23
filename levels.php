@@ -17,8 +17,6 @@ if($stmt = mysqli_prepare($link, $sql)){
 }
 mysqli_close($link);
 
-$xp_for_next_level = $user_stats['level'] * 1000;
-
 // Calculate time for the timer
 $turn_interval_minutes = 10;
 $last_updated = new DateTime($user_stats['last_updated'], new DateTimeZone('UTC'));
