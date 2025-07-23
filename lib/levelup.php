@@ -14,7 +14,7 @@ $points_for_charisma = isset($_POST['charisma_points']) ? max(0, (int)$_POST['ch
 $total_points_to_spend = $points_for_strength + $points_for_constitution + $points_for_wealth + $points_for_dexterity + $points_for_charisma;
 
 if ($total_points_to_spend <= 0) {
-    header("location: levels.php");
+    header("location: /levels.php");
     exit;
 }
 
