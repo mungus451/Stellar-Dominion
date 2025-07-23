@@ -1,0 +1,57 @@
+<?php
+/**
+ * Stellar Dominion - A.I. Advisor Module
+ *
+ * This file generates the advisor box content. It expects a variable
+ * named $active_page to be set before it's included.
+ */
+
+// An array of advice strings, categorized by the page they should appear on.
+$advice_repository = [
+    'dashboard.php' => [
+        "Your central command hub. Monitor your resources and fleet status from here.",
+        "A strong economy is the backbone of any successful empire.",
+        "Keep an eye on your Dominion Time; it's synchronized across the galaxy."
+    ],
+    'attack.php' => [
+        "Choose your targets wisely. Attacking stronger opponents yields greater rewards, but carries higher risk.",
+        "The more turns you use in an attack, the more credits you can plunder on a victory.",
+        "Check a target's level. A higher level may indicate a more formidable opponent."
+    ],
+    'battle.php' => [
+        "Train your untrained citizens into specialized units to expand your dominion.",
+        "Workers increase your income, while Soldiers and Guards form your military might.",
+        "Don't forget to balance your army. A strong offense is nothing without a solid defense."
+    ],
+    'levels.php' => [
+        "Spend proficiency points to permanently enhance your dominion's capabilities.",
+        "Strength increases your fleet's Offense Power in battle.",
+        "Constitution boosts your Defense Rating, making you a harder target."
+    ],
+    'war_history.php' => [
+        "Review your past engagements to learn from victories and defeats.",
+        "Analyze your defense logs to identify your most frequent attackers.",
+        "A victory is sweet, but a lesson learned from defeat is invaluable."
+    ],
+    'structures.php' => [
+        "This is where you can spend points to upgrade your core units.",
+        "Upgrading soldiers will make your attacks more potent.",
+        "Investing in guards will bolster your empire's defenses."
+    ]
+];
+
+// Get the appropriate advice for the current page, or provide a default message.
+$current_advice_list = isset($advice_repository[$active_page]) ? $advice_repository[$active_page] : ["Welcome to Stellar Dominion."];
+
+// Encode the list of advice for the current page into a JSON string.
+// This makes it easy to pass the data to our JavaScript.
+$advice_json = htmlspecialchars(json_encode($current_advice_list), ENT_QUOTES, 'UTF-8');
+
+?>
+
+<div class="content-box rounded-lg p-4">
+    <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-2">A.I. Advisor</h3>
+    <p id="advisor-text" class="text-sm transition-opacity duration-500" data-advice='<?php echo $advice_json; ?>'>
+        <?php echo $current_advice_list[0]; // Display the first piece of advice initially ?>
+    </p>
+</div>
