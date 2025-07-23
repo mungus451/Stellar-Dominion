@@ -1,31 +1,23 @@
 <?php
-/**
- * dashboard.php
- *
- * This is the main landing page for a logged-in user. It serves as a central hub
- * displaying a complete overview of the player's empire, including their resources,
- * derived combat and economic stats, and key game timers.
- *
- * A critical function of this page is to process any "overdue" turns for the player
- * right as they load the page, ensuring their resources are always up-to-date.
- */
-
 // --- SESSION AND DATABASE SETUP ---
-// Start the session to access logged-in user data.
 session_start();
-// Set the default timezone to UTC for consistent time calculations across the application.
 date_default_timezone_set('UTC');
-// If the user is not logged in, redirect them to the main page and stop script execution.
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){ header("location: index.html"); exit; }
-// Include the database configuration file to establish a connection.
 require_once "db_config.php";
 
+// --- GAME DATA: STRUCTURE DEFINITIONS ---
+// This array is needed here to calculate bonuses. It must match structures.php
+$structures = [
+    1 => ['income_bonus' => 100, 'defense_bonus' => 0, 'fortification_bonus' => 0],
+    2 => ['income_bonus' => 0, 'defense_bonus' => 5, 'fortification_bonus' => 0],
+    3 => ['income_bonus' => 250, 'defense_bonus' => 0, 'fortification_bonus' => 0],
+    4 => ['income_bonus' => 0, 'defense_bonus' => 10, 'fortification_bonus' => 500],
+    5 => ['income_bonus' => 500, 'defense_bonus' => 15, 'fortification_bonus' => 1000]
+];
+
 // --- CATCH-UP MECHANISM: PROCESS OVERDUE TURNS ---
-// This block ensures that a player receives all the resources they've earned since their last activity.
-// This is crucial for the idle-game aspect, as it simulates progress while the player is offline.
 $user_id = $_SESSION["id"];
-// Select the necessary data from the user's row to calculate earned resources.
-$sql_check = "SELECT last_updated, workers, wealth_points FROM users WHERE id = ?";
+$sql_check = "SELECT last_updated, workers, wealth_points, structure_level FROM users WHERE id = ?";
 if($stmt_check = mysqli_prepare($link, $sql_check)) {
     mysqli_stmt_bind_param($stmt_check, "i", $user_id);
     mysqli_stmt_execute($stmt_check);
@@ -34,36 +26,33 @@ if($stmt_check = mysqli_prepare($link, $sql_check)) {
     mysqli_stmt_close($stmt_check);
 
     if ($user_check_data) {
-        // Define core game rules for resource generation.
         $turn_interval_minutes = 10;
-        $attack_turns_per_turn = 2;
-        $citizens_per_turn = 1;
-        $credits_per_worker = 50;
-        $base_income_per_turn = 5000;
-
-        // Calculate the number of full 10-minute turns that have passed since the user's 'last_updated' timestamp.
         $last_updated = new DateTime($user_check_data['last_updated']);
         $now = new DateTime();
         $minutes_since_last_update = ($now->getTimestamp() - $last_updated->getTimestamp()) / 60;
         $turns_to_process = floor($minutes_since_last_update / $turn_interval_minutes);
 
-        // If at least one turn has passed, calculate and award the resources.
         if ($turns_to_process > 0) {
-            // Calculate total resources gained over the missed turns.
-            $gained_attack_turns = $turns_to_process * $attack_turns_per_turn;
-            $gained_citizens = $turns_to_process * $citizens_per_turn;
-            
-            // Calculate income, including the percentage bonus from the 'wealth_points' stat.
-            $worker_income = $user_check_data['workers'] * $credits_per_worker;
-            $total_base_income = $base_income_per_turn + $worker_income;
-            $wealth_bonus = 1 + ($user_check_data['wealth_points'] * 0.01);
-            $income_per_turn = floor($total_base_income * $wealth_bonus);
-            $gained_credits = $income_per_turn * $turns_to_process;
-            
-            // Get the current UTC time to set as the new 'last_updated' timestamp.
-            $current_utc_time_str = gmdate('Y-m-d H:i:s');
+            // Calculate total income bonus from structures
+            $structure_income_bonus = 0;
+            for ($i = 1; $i <= $user_check_data['structure_level']; $i++) {
+                if (isset($structures[$i])) {
+                    $structure_income_bonus += $structures[$i]['income_bonus'];
+                }
+            }
 
-            // Prepare and execute the SQL query to add the gained resources and update the timestamp.
+            // Calculate income per turn including structure bonus
+            $worker_income = $user_check_data['workers'] * 50;
+            $base_income_per_turn = 5000 + $worker_income + $structure_income_bonus;
+            $wealth_bonus = 1 + ($user_check_data['wealth_points'] * 0.01);
+            $income_per_turn = floor($base_income_per_turn * $wealth_bonus);
+            
+            // Calculate total gains
+            $gained_credits = $income_per_turn * $turns_to_process;
+            $gained_attack_turns = $turns_to_process * 2;
+            $gained_citizens = $turns_to_process * 1;
+            
+            $current_utc_time_str = gmdate('Y-m-d H:i:s');
             $sql_update = "UPDATE users SET attack_turns = attack_turns + ?, untrained_citizens = untrained_citizens + ?, credits = credits + ?, last_updated = ? WHERE id = ?";
             if($stmt_update = mysqli_prepare($link, $sql_update)){
                 mysqli_stmt_bind_param($stmt_update, "iiisi", $gained_attack_turns, $gained_citizens, $gained_credits, $current_utc_time_str, $user_id);
@@ -75,9 +64,7 @@ if($stmt_check = mysqli_prepare($link, $sql_check)) {
 }
 // --- END: CATCH-UP MECHANISM ---
 
-
 // --- DATA FETCHING FOR DISPLAY ---
-// Now that resources are updated, fetch the complete and current user data for display.
 $character_data = [];
 $sql = "SELECT * FROM users WHERE id = ?";
 if($stmt = mysqli_prepare($link, $sql)){
@@ -89,23 +76,34 @@ if($stmt = mysqli_prepare($link, $sql)){
 }
 mysqli_close($link);
 
+// --- CALCULATE CUMULATIVE BONUSES FROM STRUCTURES ---
+$total_structure_income = 0;
+$total_structure_defense = 0;
+$total_structure_fortification = 0;
+for ($i = 1; $i <= $character_data['structure_level']; $i++) {
+    if (isset($structures[$i])) {
+        $total_structure_income += $structures[$i]['income_bonus'];
+        $total_structure_defense += $structures[$i]['defense_bonus'];
+        $total_structure_fortification += $structures[$i]['fortification_bonus'];
+    }
+}
 
-// --- CALCULATE DERIVED STATS ---
-// These are stats calculated from base values for a more meaningful display on the dashboard.
+// --- CALCULATE DERIVED STATS including structure bonuses ---
 $strength_bonus = 1 + ($character_data['strength_points'] * 0.01);
 $constitution_bonus = 1 + ($character_data['constitution_points'] * 0.01);
+$structure_defense_multiplier = 1 + ($total_structure_defense / 100);
+
 $offense_power = floor(($character_data['soldiers'] * 10) * $strength_bonus);
-$defense_rating = floor(($character_data['guards'] * 10) * $constitution_bonus);
-$fortification = $character_data['sentries'] * 10;
+$defense_rating = floor((($character_data['guards'] * 10) * $constitution_bonus) * $structure_defense_multiplier);
+$fortification = ($character_data['sentries'] * 10) + $total_structure_fortification;
 $infiltration = $character_data['spies'] * 10;
+
 $worker_income = $character_data['workers'] * 50;
-$total_base_income = 5000 + $worker_income;
+$total_base_income = 5000 + $worker_income + $total_structure_income;
 $wealth_bonus = 1 + ($character_data['wealth_points'] * 0.01);
 $credits_per_turn = floor($total_base_income * $wealth_bonus);
 
 // --- TIMER CALCULATIONS ---
-// This is the same logic as the catch-up mechanism, but its purpose here is to get the
-// exact time remaining for the JavaScript countdown timer on the front end.
 $turn_interval_minutes = 10;
 $last_updated = new DateTime($character_data['last_updated'], new DateTimeZone('UTC'));
 $now = new DateTime('now', new DateTimeZone('UTC'));
@@ -117,7 +115,6 @@ $minutes_until_next_turn = floor($seconds_until_next_turn / 60);
 $seconds_remainder = $seconds_until_next_turn % 60;
 
 // --- PAGE IDENTIFICATION ---
-// This variable is used by 'navigation.php' to highlight the correct menu item.
 $active_page = 'dashboard.php';
 ?>
 <!DOCTYPE html>
