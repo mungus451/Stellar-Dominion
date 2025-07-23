@@ -32,9 +32,10 @@ $main_nav_links = [
 $sub_nav_links = [
     'HOME' => [
         'Dashboard' => 'dashboard.php',
-        'Levels' => 'levels.php'
-    ],
-    'BATTLE' => [
+        'Levels' => 'levels.php',
+        'Profile' => 'profile.php',
+        'Settings' => 'settings.php'
+    ],    'BATTLE' => [
         'Attack' => 'attack.php',
         'Training' => 'battle.php',
         'War History' => 'war_history.php'
@@ -51,6 +52,9 @@ $sub_nav_links = [
 // Determine the currently active main category based on the '$active_page' variable.
 // This is used to highlight the correct main navigation link (e.g., 'BATTLE').
 $active_main_category = 'HOME'; // Default to 'HOME'
+if (in_array($active_page, ['dashboard.php', 'levels.php', 'profile.php', 'settings.php'])) {
+    $active_main_category = 'HOME';
+}
 if (in_array($active_page, ['battle.php', 'attack.php', 'war_history.php'])) {
     $active_main_category = 'BATTLE';
 } elseif (in_array($active_page, ['structures.php'])) {
