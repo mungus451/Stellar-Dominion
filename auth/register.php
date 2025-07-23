@@ -1,6 +1,6 @@
 <?php
 session_start();
-// Go UP one directory from /auth, then DOWN into /lib
+// This path is correct. It goes UP from 'auth' and then DOWN into 'lib'.
 require_once __DIR__ . '/../lib/db_config.php';
 
 $email = trim($_POST['email']);
