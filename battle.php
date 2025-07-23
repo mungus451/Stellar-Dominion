@@ -1,4 +1,15 @@
 <?php
+/**
+ * battle.php
+ *
+ * This page is where players train their military and economic units. It displays
+ * the player's current resources (credits and untrained citizens) and provides a
+ * form to specify how many of each unit type they wish to train.
+ *
+ * The form submission is handled by 'train.php'.
+ */
+
+// --- SESSION AND DATABASE SETUP ---
 session_start();
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){ header("location: index.html"); exit; }
 require_once "db_config.php";
@@ -6,7 +17,8 @@ date_default_timezone_set('UTC');
 
 $user_id = $_SESSION['id'];
 
-// Fetch user's stats for the sidebar
+// --- DATA FETCHING ---
+// Fetch the user's core stats for the sidebar display.
 $sql_user_stats = "SELECT credits, untrained_citizens, level, attack_turns, last_updated FROM users WHERE id = ?";
 $stmt_user_stats = mysqli_prepare($link, $sql_user_stats);
 mysqli_stmt_bind_param($stmt_user_stats, "i", $user_id);
@@ -15,7 +27,7 @@ $user_stats_result = mysqli_stmt_get_result($stmt_user_stats);
 $user_stats = mysqli_fetch_assoc($user_stats_result);
 mysqli_stmt_close($stmt_user_stats);
 
-// Fetch user's resources for the training form
+// Fetch the user's current unit counts to display alongside the training inputs.
 $sql_resources = "SELECT untrained_citizens, credits, soldiers, guards, sentries, spies, workers FROM users WHERE id = ?";
 if($stmt_resources = mysqli_prepare($link, $sql_resources)){
     mysqli_stmt_bind_param($stmt_resources, "i", $user_id);
@@ -26,13 +38,17 @@ if($stmt_resources = mysqli_prepare($link, $sql_resources)){
 }
 mysqli_close($link);
 
-// Define unit costs
+
+// --- GAME DATA ---
+// Define the base credit cost for each trainable unit.
+// This is used for display purposes on this page. The actual cost calculation,
+// including charisma discounts, is handled in 'train.php'.
 $unit_costs = [
     'workers' => 100, 'soldiers' => 250, 'guards' => 250,
     'sentries' => 500, 'spies' => 1000,
 ];
 
-// Calculate time for the timer
+// --- TIMER CALCULATIONS ---
 $turn_interval_minutes = 10;
 $last_updated = new DateTime($user_stats['last_updated'], new DateTimeZone('UTC'));
 $now = new DateTime('now', new DateTimeZone('UTC'));
@@ -43,7 +59,8 @@ if ($seconds_until_next_turn < 0) { $seconds_until_next_turn = 0; }
 $minutes_until_next_turn = floor($seconds_until_next_turn / 60);
 $seconds_remainder = $seconds_until_next_turn % 60;
 
-$active_page = 'battle.php'; // Set active page for navigation
+// --- PAGE IDENTIFICATION ---
+$active_page = 'battle.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -89,15 +106,20 @@ $active_page = 'battle.php'; // Set active page for navigation
                     </div>
                 </aside>
 
-                <!-- Main Content -->
+                <!-- Main Content: Training Form -->
                 <main class="lg:col-span-3">
                     <form action="train.php" method="POST" class="space-y-4">
-                        <?php if(isset($_SESSION['training_error'])): ?>
+                        <?php
+                        // Display any training-related error messages (e.g., "Not enough credits")
+                        // that were set in 'train.php' and stored in the session.
+                        if(isset($_SESSION['training_error'])):
+                        ?>
                             <div class="bg-red-900 border border-red-500/50 text-red-300 p-3 rounded-md text-center">
-                                <?php echo $_SESSION['training_error']; unset($_SESSION['training_error']); ?>
+                                <?php echo $_SESSION['training_error']; unset($_SESSION['training_error']); // Unset the error after displaying it. ?>
                             </div>
                         <?php endif; ?>
 
+                        <!-- Unit Training Sections -->
                         <div class="content-box rounded-lg p-4">
                             <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-3">Economy</h3>
                             <div class="flex items-center justify-between">
