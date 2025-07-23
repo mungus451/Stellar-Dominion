@@ -1,4 +1,15 @@
 <?php
+/**
+ * structures.php
+ *
+ * This page allows players to build and upgrade permanent structures that provide
+ * passive bonuses to their empire, such as increased income or defensive capabilities.
+ *
+ * Players spend credits to build the next available structure in a linear progression,
+ * provided they meet the level and credit requirements.
+ */
+
+// --- SESSION AND DATABASE SETUP ---
 session_start();
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){ header("location: index.html"); exit; }
 require_once "db_config.php";
@@ -6,8 +17,10 @@ date_default_timezone_set('UTC');
 
 $user_id = $_SESSION['id'];
 
-// Fetch user's stats for the sidebar and main content
-$sql = "SELECT credits, untrained_citizens, level, attack_turns, last_updated, experience, level_up_points FROM users WHERE id = ?";
+// --- DATA FETCHING ---
+// Fetch all necessary stats for the current user. This includes resources for the sidebar
+// and the user's current structure_level to determine their building progress.
+$sql = "SELECT credits, untrained_citizens, level, attack_turns, last_updated, structure_level FROM users WHERE id = ?";
 if($stmt = mysqli_prepare($link, $sql)){
     mysqli_stmt_bind_param($stmt, "i", $user_id);
     mysqli_stmt_execute($stmt);
@@ -17,9 +30,51 @@ if($stmt = mysqli_prepare($link, $sql)){
 }
 mysqli_close($link);
 
-$xp_for_next_level = $user_stats['level'] * 1000; // XP needed for next level
 
-// Calculate time for the timer
+// --- GAME DATA: STRUCTURE DEFINITIONS ---
+// An array holding all the data for the buildable structures.
+// To add a new structure, simply add a new entry to this array.
+// The key (0, 1, 2...) corresponds to the 'structure_level' in the database.
+$structures = [
+    1 => [
+        'name' => 'Foundation Outpost',
+        'level_req' => 1,
+        'cost' => 50000,
+        'bonus_description' => '+100 Credits/Turn',
+        'flavor_text' => 'A basic frontier camp—brings in vital resources.'
+    ],
+    2 => [
+        'name' => 'Recon Tower',
+        'level_req' => 5,
+        'cost' => 250000,
+        'bonus_description' => '+5% Defense Bonus',
+        'flavor_text' => 'High perch for scouts; early warning and ranged cover.'
+    ],
+    3 => [
+        'name' => 'Supply Depot',
+        'level_req' => 10,
+        'cost' => 1000000,
+        'bonus_description' => '+250 Credits/Turn',
+        'flavor_text' => 'Central hub for logistics and modest stockpiling.'
+    ],
+    4 => [
+        'name' => 'Shield Wall',
+        'level_req' => 15,
+        'cost' => 5000000,
+        'bonus_description' => '+10% Defense Bonus',
+        'flavor_text' => 'Reinforced barriers that repel assaults effectively.'
+    ],
+    5 => [
+        'name' => 'Bastion Citadel',
+        'level_req' => 20,
+        'cost' => 20000000,
+        'bonus_description' => '+500 Credits/Turn',
+        'flavor_text' => 'A heavily fortified stronghold with integrated vaults.'
+    ]
+];
+
+
+// --- TIMER CALCULATIONS ---
 $turn_interval_minutes = 10;
 $last_updated = new DateTime($user_stats['last_updated'], new DateTimeZone('UTC'));
 $now = new DateTime('now', new DateTimeZone('UTC'));
@@ -30,7 +85,8 @@ if ($seconds_until_next_turn < 0) { $seconds_until_next_turn = 0; }
 $minutes_until_next_turn = floor($seconds_until_next_turn / 60);
 $seconds_remainder = $seconds_until_next_turn % 60;
 
-$active_page = 'structures.php'; // Set active page for navigation
+// --- PAGE IDENTIFICATION ---
+$active_page = 'structures.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -78,54 +134,64 @@ $active_page = 'structures.php'; // Set active page for navigation
                 
                 <!-- Main Content -->
                 <main class="lg:col-span-3">
-                    <form action="levelup.php" method="POST" class="space-y-4">
-                        <div class="content-box rounded-lg p-4">
-                            <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-3">Level Up</h3>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                                <div class="bg-gray-800 p-3 rounded-md">
-                                    <p class="text-sm">Current Level</p>
-                                    <p class="text-lg font-bold text-white"><?php echo $user_stats['level']; ?></p>
-                                </div>
-                                <div class="bg-gray-800 p-3 rounded-md">
-                                    <p class="text-sm">Experience</p>
-                                    <p class="text-lg font-bold text-white"><?php echo number_format($user_stats['experience']); ?> / <?php echo number_format($xp_for_next_level); ?></p>
-                                </div>
-                                <div class="bg-gray-800 p-3 rounded-md">
-                                    <p class="text-sm">Available Points</p>
-                                    <p id="available-points" class="text-lg font-bold text-white"><?php echo $user_stats['level_up_points']; ?></p>
-                                </div>
+                    <div class="content-box rounded-lg p-4">
+                        <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-3">Structure Upgrades</h3>
+                        <?php if(isset($_SESSION['build_message'])): ?>
+                            <div class="bg-green-900 border border-green-500/50 text-green-300 p-3 rounded-md text-center mb-4">
+                                <?php echo $_SESSION['build_message']; unset($_SESSION['build_message']); ?>
                             </div>
+                        <?php endif; ?>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left">
+                                <thead class="bg-gray-800">
+                                    <tr>
+                                        <th class="p-2">Structure</th>
+                                        <th class="p-2">Level Req.</th>
+                                        <th class="p-2">Bonus</th>
+                                        <th class="p-2">Cost</th>
+                                        <th class="p-2">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php foreach($structures as $level => $structure): ?>
+                                    <tr class="border-t border-gray-700">
+                                        <td class="p-2">
+                                            <p class="font-bold text-white"><?php echo $structure['name']; ?></p>
+                                            <p class="text-xs text-gray-500"><?php echo $structure['flavor_text']; ?></p>
+                                        </td>
+                                        <td class="p-2"><?php echo $structure['level_req']; ?></td>
+                                        <td class="p-2 text-cyan-300"><?php echo $structure['bonus_description']; ?></td>
+                                        <td class="p-2"><?php echo number_format($structure['cost']); ?></td>
+                                        <td class="p-2">
+                                            <?php
+                                            // This logic determines what button or text to show in the "Action" column.
+                                            if ($user_stats['structure_level'] >= $level) {
+                                                // Player already has this structure or a higher one.
+                                                echo '<span class="font-bold text-green-400">Owned</span>';
+                                            } elseif ($user_stats['structure_level'] == $level - 1) {
+                                                // This is the next available structure for the player to build.
+                                                if ($user_stats['level'] >= $structure['level_req'] && $user_stats['credits'] >= $structure['cost']) {
+                                                    // Player meets all requirements. Show the build form/button.
+                                                    echo '<form action="build_structure.php" method="POST">';
+                                                    echo '<input type="hidden" name="structure_level" value="' . $level . '">';
+                                                    echo '<button type="submit" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-1 px-3 rounded-md text-xs">Build</button>';
+                                                    echo '</form>';
+                                                } else {
+                                                    // Player does not meet requirements. Show a disabled button.
+                                                    echo '<button class="bg-gray-600 text-gray-400 font-bold py-1 px-3 rounded-md text-xs cursor-not-allowed">Unavailable</button>';
+                                                }
+                                            } else {
+                                                // This is a future structure the player cannot build yet.
+                                                echo '<span class="text-gray-500">Locked</span>';
+                                            }
+                                            ?>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
                         </div>
-
-                        <div class="content-box rounded-lg p-4">
-                             <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-3">Spend Points</h3>
-                             <p class="text-sm mb-4">Each point adds 1 unit. Distribute your available points below.</p>
-                             <div class="space-y-3">
-                                <div class="flex items-center justify-between">
-                                    <label for="soldiers" class="font-bold text-white">Offense (Soldiers)</label>
-                                    <input type="number" id="soldiers" name="soldiers" min="0" value="0" class="bg-gray-900 border border-gray-600 rounded-md w-24 text-center p-1 point-input">
-                                </div>
-                                 <div class="flex items-center justify-between">
-                                    <label for="guards" class="font-bold text-white">Defense (Guards)</label>
-                                    <input type="number" id="guards" name="guards" min="0" value="0" class="bg-gray-900 border border-gray-600 rounded-md w-24 text-center p-1 point-input">
-                                </div>
-                                 <div class="flex items-center justify-between">
-                                    <label for="sentries" class="font-bold text-white">Fortification (Sentries)</label>
-                                    <input type="number" id="sentries" name="sentries" min="0" value="0" class="bg-gray-900 border border-gray-600 rounded-md w-24 text-center p-1 point-input">
-                                </div>
-                                 <div class="flex items-center justify-between">
-                                    <label for="spies" class="font-bold text-white">Infiltration (Spies)</label>
-                                    <input type="number" id="spies" name="spies" min="0" value="0" class="bg-gray-900 border border-gray-600 rounded-md w-24 text-center p-1 point-input">
-                                </div>
-                             </div>
-                        </div>
-                         <div class="content-box rounded-lg p-4 flex justify-between items-center">
-                            <div>
-                                <p>Total Points to Spend: <span id="total-spent" class="font-bold text-white">0</span></p>
-                            </div>
-                            <button type="submit" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-8 rounded-lg transition-colors">Upgrade Stats</button>
-                        </div>
-                    </form>
+                    </div>
                 </main>
             </div>
             </div> <!-- This closes the .main-bg div from navigation.php -->
