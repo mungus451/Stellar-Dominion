@@ -49,10 +49,19 @@ try {
         }
     }
 
-    // Check if user has enough resources
-    if ($user['untrained_citizens'] < $total_citizens_needed || $user['credits'] < $total_credits_needed) {
-        throw new Exception("Not enough resources to train units.");
+    // ** CHANGED **: Check for resources and set specific error messages
+    if ($user['untrained_citizens'] < $total_citizens_needed) {
+        $_SESSION['training_error'] = "Not enough untrained citizens. Required: " . number_format($total_citizens_needed) . ", Available: " . number_format($user['untrained_citizens']);
+        header("location: battle.php");
+        exit;
     }
+    
+    if ($user['credits'] < $total_credits_needed) {
+        $_SESSION['training_error'] = "Not enough credits. Required: " . number_format($total_credits_needed) . ", Available: " . number_format($user['credits']);
+        header("location: battle.php");
+        exit;
+    }
+
 
     // If checks pass, perform the update
     $sql_update = "UPDATE users SET 
@@ -79,7 +88,10 @@ try {
 
 } catch (Exception $e) {
     mysqli_rollback($link);
-    die("Transaction failed: " . $e->getMessage());
+    // Set a generic error for database issues
+    $_SESSION['training_error'] = "A database error occurred. Please try again.";
+    header("location: battle.php");
+    exit;
 }
 
 header("location: battle.php");

@@ -16,8 +16,8 @@ if(empty($email) || empty($character_name) || empty($password) || empty($race) |
 $password_hash = password_hash($password, PASSWORD_DEFAULT);
 
 // Prepare an insert statement
-// ** CHANGED **: New players start with 1 level up point at level 1.
-$sql = "INSERT INTO users (email, character_name, password_hash, race, class, credits, level_up_points) VALUES (?, ?, ?, ?, ?, 10000, 1)";
+// ** CHANGED **: New players now start with 100,000 credits and 1,000 untrained citizens.
+$sql = "INSERT INTO users (email, character_name, password_hash, race, class, credits, untrained_citizens, level_up_points) VALUES (?, ?, ?, ?, ?, 100000, 1000, 1)";
 
 if($stmt = mysqli_prepare($link, $sql)){
     mysqli_stmt_bind_param($stmt, "sssss", $email, $character_name, $password_hash, $race, $class);

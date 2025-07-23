@@ -7,8 +7,8 @@ date_default_timezone_set('UTC');
 $user_id = $_SESSION['id'];
 
 // --- START: Process Overdue Turns for Current User ---
-// This logic ensures your stats are up-to-date when you load the page.
-// ... (Full turn processing logic is here, same as dashboard.php)
+// (This logic is duplicated here to ensure stats are current when the page loads)
+// ... (omitted for brevity, but it's the same as the dashboard.php)
 // --- END: Process Overdue Turns ---
 
 // Fetch user's stats for the sidebar
@@ -48,14 +48,7 @@ $seconds_remainder = $seconds_until_next_turn % 60;
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Roboto', sans-serif; background-color: #0c1427; }
-        .font-title { font-family: 'Orbitron', sans-serif; }
-        .main-bg { background-color: #111827; }
-        .content-box { background-color: #1f2937; border: 1px solid #374151; }
-        .nav-link { border-bottom: 2px solid transparent; }
-        .nav-link.active, .nav-link:hover { border-bottom-color: #06b6d4; color: #fff; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body class="text-gray-400 antialiased">
     <div class="min-h-screen bg-cover bg-center bg-fixed" style="background-image: url('https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%D%D&auto=format&fit=crop&w=1742&q=80');">
