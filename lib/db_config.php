@@ -1,4 +1,10 @@
 <?php
+// --- START: ADD THESE 3 LINES FOR DEBUGGING ---
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+// --- END: DEBUGGING LINES ---
+
 /*
  * -----------------------------------------------------------------------------
  * Database Configuration
