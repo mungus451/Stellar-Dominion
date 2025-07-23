@@ -1,15 +1,34 @@
 <?php
-// This script generates the main and sub-navigation menus.
-// It expects a variable named $active_page to be set before it's included.
+/**
+ * navigation.php
+ *
+ * This is a centralized, reusable component for generating the main and sub-navigation
+ * menus across all game pages. It ensures consistency and makes adding or removing
+ * links a simple, one-time edit.
+ *
+ * It dynamically determines the active page and category to apply highlighting styles.
+ *
+ * IMPORTANT: Any page that includes this file MUST define a variable named '$active_page'
+ * before the 'include' statement. For example:
+ * $active_page = 'dashboard.php';
+ * include_once 'navigation.php';
+ */
 
+// --- NAVIGATION STRUCTURE DEFINITION ---
+
+// Defines the links that appear in the main, top-level navigation bar.
+// 'Link Text' => 'file_name.php'
 $main_nav_links = [
     'HOME' => 'dashboard.php',
     'BATTLE' => 'battle.php',
     'STRUCTURES' => 'structures.php',
-    'COMMUNITY' => '#', // Placeholder
+    'COMMUNITY' => '#', // A placeholder link for a future feature.
     'SIGN OUT' => 'logout.php'
 ];
 
+// Defines the links that appear in the secondary, sub-navigation bar.
+// The keys ('HOME', 'BATTLE', etc.) correspond to the main navigation categories.
+// This allows for context-sensitive sub-menus.
 $sub_nav_links = [
     'HOME' => [
         'Dashboard' => 'dashboard.php',
@@ -21,42 +40,70 @@ $sub_nav_links = [
         'War History' => 'war_history.php'
     ],
     'STRUCTURES' => [
-        // Placeholder for future pages
+        // This category currently has no sub-navigation.
+        // The sub-nav bar will not be displayed when this category is active.
     ]
 ];
 
-// Determine the active main category
-$active_main_category = 'HOME'; // Default
+
+// --- ACTIVE STATE LOGIC ---
+
+// Determine the currently active main category based on the '$active_page' variable.
+// This is used to highlight the correct main navigation link (e.g., 'BATTLE').
+$active_main_category = 'HOME'; // Default to 'HOME'
 if (in_array($active_page, ['battle.php', 'attack.php', 'war_history.php'])) {
     $active_main_category = 'BATTLE';
 } elseif (in_array($active_page, ['structures.php'])) {
     $active_main_category = 'STRUCTURES';
 }
+// Note: You can add more 'elseif' conditions here for new categories.
 
 ?>
+<!-- The HTML output begins here. -->
+
+<!-- Page Header -->
 <header class="text-center mb-4">
     <h1 class="text-5xl font-title text-cyan-400" style="text-shadow: 0 0 8px rgba(6, 182, 212, 0.7);">STELLAR DOMINION</h1>
 </header>
 
+<!-- Navigation Container -->
 <div class="main-bg border border-gray-700 rounded-lg shadow-2xl p-1">
+    <!-- Main Navigation -->
     <nav class="flex justify-center space-x-4 md:space-x-8 bg-gray-900 p-3 rounded-t-md">
-        <?php foreach ($main_nav_links as $title => $link): ?>
-            <a href="<?php echo $link; ?>"
-               class="nav-link <?php echo ($title == $active_main_category) ? 'active font-bold' : 'text-gray-400 hover:text-white'; ?> px-3 py-1 transition-all">
+        <?php
+        // Loop through the main navigation links and generate the HTML for each one.
+        foreach ($main_nav_links as $title => $link):
+        ?>
+            <a href="<?php echo $link; ?>" 
+               class="nav-link <?php
+                    // Conditionally add the 'active' class if the current link's category
+                    // matches the determined active category.
+                    echo ($title == $active_main_category) ? 'active font-bold' : 'text-gray-400 hover:text-white';
+                ?> px-3 py-1 transition-all">
                <?php echo $title; ?>
             </a>
         <?php endforeach; ?>
     </nav>
 
-    <?php if (isset($sub_nav_links[$active_main_category]) && !empty($sub_nav_links[$active_main_category])): ?>
+    <!-- Sub-Navigation -->
+    <?php
+    // Check if a sub-navigation menu exists for the current active category and is not empty.
+    if (isset($sub_nav_links[$active_main_category]) && !empty($sub_nav_links[$active_main_category])):
+    ?>
     <div class="bg-gray-800 text-center p-2">
-        <?php foreach ($sub_nav_links[$active_main_category] as $title => $link): ?>
-             <a href="<?php echo $link; ?>"
-                class="<?php echo ($link == $active_page) ? 'font-semibold text-white' : 'text-gray-400 hover:text-white'; ?> px-3">
+        <?php
+        // Loop through the sub-navigation links for the active category.
+        foreach ($sub_nav_links[$active_main_category] as $title => $link):
+        ?>
+             <a href="<?php echo $link; ?>" 
+                class="<?php
+                    // Conditionally add styling if the sub-nav link matches the exact active page.
+                    echo ($link == $active_page) ? 'font-semibold text-white' : 'text-gray-400 hover:text-white';
+                ?> px-3">
                 <?php echo $title; ?>
              </a>
         <?php endforeach; ?>
     </div>
-    <?php endif; ?>
+    <?php endif; // End of sub-navigation check ?>
 
 </div>
