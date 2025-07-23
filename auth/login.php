@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once "db_config.php";
+require_once "/lib/db_config.php";
 
 $email = trim($_POST['email']);
 $password = trim($_POST['password']);
@@ -28,7 +28,7 @@ if($stmt = mysqli_prepare($link, $sql)){
                     $_SESSION["id"] = $id;
                     $_SESSION["character_name"] = $character_name;                            
                     
-                    header("location: dashboard.php");
+                    header("location: /dashboard.php");
                     exit;
                 } else{
                     echo "Invalid password.";
