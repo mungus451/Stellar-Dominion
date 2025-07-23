@@ -16,7 +16,7 @@ require_once "db_config.php";
 // Get the target structure level from the POST data.
 $target_level = isset($_POST['structure_level']) ? (int)$_POST['structure_level'] : 0;
 if ($target_level <= 0) {
-    header("location: structures.php");
+    header("location: /structures.php");
     exit;
 }
 
