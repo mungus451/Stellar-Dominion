@@ -1,4 +1,15 @@
 <?php
+/**
+ * war_history.php
+ *
+ * This page displays the player's personal combat history. It is divided into
+ * two sections: an "Attack Log" showing battles they initiated, and a "Defense Log"
+ * showing battles where they were the target.
+ *
+ * Each log entry provides a link to a detailed 'battle_report.php' for that specific engagement.
+ */
+
+// --- SESSION AND DATABASE SETUP ---
 session_start();
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){ header("location: index.html"); exit; }
 require_once "db_config.php";
@@ -6,7 +17,8 @@ date_default_timezone_set('UTC');
 
 $user_id = $_SESSION['id'];
 
-// Fetch user's stats for the sidebar
+// --- DATA FETCHING ---
+// Fetch the user's core stats for the sidebar display.
 $sql_user_stats = "SELECT credits, untrained_citizens, level, attack_turns, last_updated FROM users WHERE id = ?";
 $stmt_user_stats = mysqli_prepare($link, $sql_user_stats);
 mysqli_stmt_bind_param($stmt_user_stats, "i", $user_id);
@@ -15,14 +27,16 @@ $user_stats_result = mysqli_stmt_get_result($stmt_user_stats);
 $user_stats = mysqli_fetch_assoc($user_stats_result);
 mysqli_stmt_close($stmt_user_stats);
 
-// Fetch attack logs
+// Fetch all battle logs where the current user was the ATTACKER.
+// Ordered by time descending to show the most recent battles first.
 $sql_attacks = "SELECT id, defender_name, outcome, credits_stolen, battle_time FROM battle_logs WHERE attacker_id = ? ORDER BY battle_time DESC";
 $stmt_attacks = mysqli_prepare($link, $sql_attacks);
 mysqli_stmt_bind_param($stmt_attacks, "i", $user_id);
 mysqli_stmt_execute($stmt_attacks);
 $attack_logs = mysqli_stmt_get_result($stmt_attacks);
 
-// Fetch defense logs
+// Fetch all battle logs where the current user was the DEFENDER.
+// Ordered by time descending.
 $sql_defenses = "SELECT id, attacker_name, outcome, credits_stolen, battle_time FROM battle_logs WHERE defender_id = ? ORDER BY battle_time DESC";
 $stmt_defenses = mysqli_prepare($link, $sql_defenses);
 mysqli_stmt_bind_param($stmt_defenses, "i", $user_id);
@@ -30,7 +44,7 @@ mysqli_stmt_execute($stmt_defenses);
 $defense_logs = mysqli_stmt_get_result($stmt_defenses);
 
 
-// Calculate time for the timer
+// --- TIMER CALCULATIONS ---
 $turn_interval_minutes = 10;
 $last_updated = new DateTime($user_stats['last_updated'], new DateTimeZone('UTC'));
 $now = new DateTime('now', new DateTimeZone('UTC'));
@@ -41,7 +55,8 @@ if ($seconds_until_next_turn < 0) { $seconds_until_next_turn = 0; }
 $minutes_until_next_turn = floor($seconds_until_next_turn / 60);
 $seconds_remainder = $seconds_until_next_turn % 60;
 
-$active_page = 'war_history.php'; // Set active page for navigation
+// --- PAGE IDENTIFICATION ---
+$active_page = 'war_history.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -124,6 +139,7 @@ $active_page = 'war_history.php'; // Set active page for navigation
                                 <tbody>
                                     <?php while($log = mysqli_fetch_assoc($defense_logs)): ?>
                                     <tr class="border-t border-gray-700">
+                                        <!-- For the defense log, the player's "victory" means the attacker had a "defeat" outcome. -->
                                         <td class="p-2"><?php echo $log['outcome'] == 'defeat' ? '<span class="text-green-400 font-bold">Victory</span>' : '<span class="text-red-400 font-bold">Defeat</span>'; ?></td>
                                         <td class="p-2 font-bold text-white"><?php echo htmlspecialchars($log['attacker_name']); ?></td>
                                         <td class="p-2 text-red-400">-<?php echo number_format($log['credits_stolen']); ?></td>
