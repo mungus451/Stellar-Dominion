@@ -196,6 +196,6 @@ $active_page = 'dashboard.php';
             </div> <!-- This closes the .main-bg div from navigation.php -->
         </div>
     </div>
-    <script src="js/main.js" defer></script>
+    <script src="main.js" defer></script>
 </body>
 </html>
