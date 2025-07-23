@@ -16,6 +16,7 @@ mysqli_close($link);
 
 $xp_for_next_level = $user_stats['level'] * 1000; // XP needed for next level
 
+$active_page = 'structures.php'; // Set active page for navigation
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -26,34 +27,16 @@ $xp_for_next_level = $user_stats['level'] * 1000; // XP needed for next level
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Roboto', sans-serif; background-color: #0c1427; }
-        .font-title { font-family: 'Orbitron', sans-serif; }
-        .main-bg { background-color: #111827; }
-        .content-box { background-color: #1f2937; border: 1px solid #374151; }
-        .nav-link { border-bottom: 2px solid transparent; }
-        .nav-link.active, .nav-link:hover { border-bottom-color: #06b6d4; color: #fff; }
-        input[type=number] { -moz-appearance: textfield; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body class="text-gray-400 antialiased">
     <div class="min-h-screen bg-cover bg-center bg-fixed" style="background-image: url('https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%D%D&auto=format&fit=crop&w=1742&q=80');">
         <div class="container mx-auto p-4 md:p-8">
-            <header class="text-center mb-4">
-                <h1 class="text-5xl font-title text-cyan-400" style="text-shadow: 0 0 8px rgba(6, 182, 212, 0.7);">STELLAR DOMINION</h1>
-            </header>
 
-            <div class="main-bg border border-gray-700 rounded-lg shadow-2xl p-1">
-                <!-- Main Navigation -->
-                <nav class="flex justify-center space-x-4 md:space-x-8 bg-gray-900 p-3 rounded-t-md">
-                    <a href="dashboard.php" class="nav-link text-gray-400 hover:text-white px-3 py-1 transition-all">OVERVIEW</a>
-                    <a href="battle.php" class="nav-link text-gray-400 hover:text-white px-3 py-1 transition-all">BATTLE</a>
-                    <a href="structures.php" class="nav-link active font-bold px-3 py-1 transition-all">STRUCTURES</a>
-                    <a href="#" class="nav-link text-gray-400 hover:text-white px-3 py-1 transition-all">COMMUNITY</a>
-                    <a href="logout.php" class="nav-link text-gray-400 hover:text-white px-3 py-1 transition-all">SIGN OUT</a>
-                </nav>
-
-                <form action="levelup.php" method="POST" class="p-4 space-y-4">
+            <?php include_once 'navigation.php'; ?>
+            
+            <div class="p-4"> <!-- Added padding to match other pages -->
+                <form action="levelup.php" method="POST" class="space-y-4">
                     <div class="content-box rounded-lg p-4">
                         <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-3">Level Up</h3>
                         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
@@ -102,29 +85,9 @@ $xp_for_next_level = $user_stats['level'] * 1000; // XP needed for next level
                     </div>
                 </form>
             </div>
+            </div> <!-- This closes the .main-bg div from navigation.php -->
         </div>
     </div>
-    <script>
-        lucide.createIcons();
-        const availablePointsEl = document.getElementById('available-points');
-        const totalSpentEl = document.getElementById('total-spent');
-        const inputs = document.querySelectorAll('.point-input');
-        
-        function updateTotal() {
-            let total = 0;
-            inputs.forEach(input => {
-                total += parseInt(input.value) || 0;
-            });
-            totalSpentEl.textContent = total;
-            
-            if (total > parseInt(availablePointsEl.textContent)) {
-                totalSpentEl.classList.add('text-red-500');
-            } else {
-                totalSpentEl.classList.remove('text-red-500');
-            }
-        }
-        
-        inputs.forEach(input => input.addEventListener('input', updateTotal));
-    </script>
+    <script src="js/main.js" defer></script>
 </body>
 </html>

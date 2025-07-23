@@ -76,8 +76,18 @@ $active_page = 'battle.php'; // Set active page for navigation
                             <li class="flex justify-between"><span>Untrained Citizens:</span> <span class="text-white font-semibold"><?php echo number_format($user_stats['untrained_citizens']); ?></span></li>
                             <li class="flex justify-between"><span>Level:</span> <span class="text-white font-semibold"><?php echo $user_stats['level']; ?></span></li>
                             <li class="flex justify-between"><span>Attack Turns:</span> <span class="text-white font-semibold"><?php echo $user_stats['attack_turns']; ?></span></li>
-                            <li class="flex justify-between border-t border-gray-600 pt-2 mt-2"><span>Next Turn In:</span> <span id="next-turn-timer" class="text-cyan-300 font-bold"><?php echo sprintf('%02d:%02d', $minutes_until_next_turn, $seconds_remainder); ?></span></li>
-                            <li class="flex justify-between"><span>Dominion Time:</span> <span id="dominion-time" class="text-white font-semibold"><?php echo $now->format('H:i:s'); ?></span></li>
+                            <li class="flex justify-between border-t border-gray-600 pt-2 mt-2">
+                                <span>Next Turn In:</span>
+                                <span id="next-turn-timer" class="text-cyan-300 font-bold" data-seconds-until-next-turn="<?php echo $seconds_until_next_turn; ?>">
+                                    <?php echo sprintf('%02d:%02d', $minutes_until_next_turn, $seconds_remainder); ?>
+                                </span>
+                            </li>
+                            <li class="flex justify-between">
+                                <span>Dominion Time:</span>
+                                <span id="dominion-time" class="text-white font-semibold" data-hours="<?php echo $now->format('H'); ?>" data-minutes="<?php echo $now->format('i'); ?>" data-seconds="<?php echo $now->format('s'); ?>">
+                                    <?php echo $now->format('H:i:s'); ?>
+                                </span>
+                            </li>
                         </ul>
                     </div>
                 </aside>
@@ -162,36 +172,6 @@ $active_page = 'battle.php'; // Set active page for navigation
             </div> <!-- This closes the .main-bg div from navigation.php -->
         </div>
     </div>
-    <script>
-        lucide.createIcons();
-        const timerDisplay = document.getElementById('next-turn-timer');
-        let totalSeconds = <?php echo $seconds_until_next_turn; ?>;
-        const interval = setInterval(() => {
-            if (totalSeconds <= 0) {
-                timerDisplay.textContent = "Processing...";
-                clearInterval(interval);
-                setTimeout(() => {
-                    window.location.href = window.location.pathname + '?t=' + new Date().getTime();
-                }, 1500); 
-                return;
-            }
-            totalSeconds--;
-            const minutes = Math.floor(totalSeconds / 60);
-            const seconds = totalSeconds % 60;
-            timerDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-        }, 1000);
-
-        const timeDisplay = document.getElementById('dominion-time');
-        let serverTime = new Date();
-        serverTime.setUTCHours(<?php echo $now->format('H'); ?>, <?php echo $now->format('i'); ?>, <?php echo $now->format('s'); ?>);
-
-        setInterval(() => {
-            serverTime.setSeconds(serverTime.getSeconds() + 1);
-            const hours = String(serverTime.getUTCHours()).padStart(2, '0');
-            const minutes = String(serverTime.getUTCMinutes()).padStart(2, '0');
-            const seconds = String(serverTime.getUTCSeconds()).padStart(2, '0');
-            timeDisplay.textContent = `${hours}:${minutes}:${seconds}`;
-        }, 1000);
-    </script>
+    <script src="js/main.js" defer></script>
 </body>
 </html>
