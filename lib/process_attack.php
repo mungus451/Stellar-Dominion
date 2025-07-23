@@ -145,7 +145,7 @@ try {
     mysqli_stmt_close($stmt_log);
 
     mysqli_commit($link);
-    header("location: battle_report.php?id=" . $battle_log_id);
+    header("location: /battle_report.php?id=" . $battle_log_id);
     exit;
 
 } catch (Exception $e) {
