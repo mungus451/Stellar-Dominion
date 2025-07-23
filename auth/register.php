@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once "/lib/db_config.php";
+require_once "../lib/db_config.php";
 
 $email = trim($_POST['email']);
 $character_name = trim($_POST['characterName']);
