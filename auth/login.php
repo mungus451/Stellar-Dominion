@@ -1,6 +1,6 @@
 <?php
 session_start();
-// Go UP one directory from /auth, then DOWN into /lib
+// This path is correct. It goes UP from 'auth' and then DOWN into 'lib'.
 require_once __DIR__ . '/../lib/db_config.php';
 
 $email = trim($_POST['email']);
@@ -22,9 +22,7 @@ if($stmt = mysqli_prepare($link, $sql)){
             mysqli_stmt_bind_result($stmt, $id, $character_name, $hashed_password);
             if(mysqli_stmt_fetch($stmt)){
                 if(password_verify($password, $hashed_password)){
-                    // This session_start() is a duplicate and can cause issues.
-                    // session_start();
-                    
+                    // The original file had a duplicate session_start() here. It is now removed.
                     $_SESSION["loggedin"] = true;
                     $_SESSION["id"] = $id;
                     $_SESSION["character_name"] = $character_name;                            
@@ -44,3 +42,4 @@ if($stmt = mysqli_prepare($link, $sql)){
     mysqli_stmt_close($stmt);
 }
 mysqli_close($link);
+?>
