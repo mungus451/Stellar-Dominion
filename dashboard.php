@@ -60,7 +60,8 @@ $sql = "SELECT * FROM users WHERE id = ?"; // Select all columns
 if($stmt = mysqli_prepare($link, $sql)){
     mysqli_stmt_bind_param($stmt, "i", $_SESSION["id"]);
     mysqli_stmt_execute($stmt);
-    $character_data = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
+    $result = mysqli_stmt_get_result($stmt);
+    $character_data = mysqli_fetch_assoc($result);
     mysqli_stmt_close($stmt);
 }
 mysqli_close($link);
