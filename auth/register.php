@@ -1,6 +1,6 @@
 <?php
 session_start();
-require_once "db_config.php";
+require_once "/lib/db_config.php";
 
 $email = trim($_POST['email']);
 $character_name = trim($_POST['characterName']);
@@ -29,7 +29,7 @@ if($stmt = mysqli_prepare($link, $sql)){
         $_SESSION["character_name"] = $character_name;
         
         // Redirect to the dashboard
-        header("location: dashboard.php");
+        header("location: /dashboard.php");
         exit;
     } else {
         echo "ERROR: Could not execute query: $sql. " . mysqli_error($link);
