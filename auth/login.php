@@ -1,6 +1,7 @@
 <?php
 session_start();
-require_once "../lib/db_config.php";
+// Correctly require the database configuration from the parent directory's lib folder
+require_once __DIR__ . '/../lib/db_config.php';
 
 $email = trim($_POST['email']);
 $password = trim($_POST['password']);
