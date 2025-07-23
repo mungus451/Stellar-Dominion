@@ -4,9 +4,6 @@
  *
  * This page allows players to build and upgrade permanent structures that provide
  * passive bonuses to their empire, such as increased income or defensive capabilities.
- *
- * Players spend credits to build the next available structure in a linear progression,
- * provided they meet the level and credit requirements.
  */
 
 // --- SESSION AND DATABASE SETUP ---
@@ -18,8 +15,6 @@ date_default_timezone_set('UTC');
 $user_id = $_SESSION['id'];
 
 // --- DATA FETCHING ---
-// Fetch all necessary stats for the current user. This includes resources for the sidebar
-// and the user's current structure_level to determine their building progress.
 $sql = "SELECT credits, untrained_citizens, level, attack_turns, last_updated, structure_level FROM users WHERE id = ?";
 if($stmt = mysqli_prepare($link, $sql)){
     mysqli_stmt_bind_param($stmt, "i", $user_id);
@@ -32,43 +27,51 @@ mysqli_close($link);
 
 
 // --- GAME DATA: STRUCTURE DEFINITIONS ---
-// An array holding all the data for the buildable structures.
-// To add a new structure, simply add a new entry to this array.
-// The key (0, 1, 2...) corresponds to the 'structure_level' in the database.
+// This array now includes specific bonuses for income, defense, and fortification.
 $structures = [
     1 => [
         'name' => 'Foundation Outpost',
         'level_req' => 1,
         'cost' => 50000,
-        'bonus_description' => '+100 Credits/Turn',
+        'income_bonus' => 100,
+        'defense_bonus' => 0,
+        'fortification_bonus' => 0,
         'flavor_text' => 'A basic frontier camp—brings in vital resources.'
     ],
     2 => [
         'name' => 'Recon Tower',
         'level_req' => 5,
         'cost' => 250000,
-        'bonus_description' => '+5% Defense Bonus',
+        'income_bonus' => 0,
+        'defense_bonus' => 5, // Represents a 5% bonus
+        'fortification_bonus' => 0,
         'flavor_text' => 'High perch for scouts; early warning and ranged cover.'
     ],
     3 => [
         'name' => 'Supply Depot',
         'level_req' => 10,
         'cost' => 1000000,
-        'bonus_description' => '+250 Credits/Turn',
+        'income_bonus' => 250,
+        'defense_bonus' => 0,
+        'fortification_bonus' => 0,
         'flavor_text' => 'Central hub for logistics and modest stockpiling.'
     ],
     4 => [
         'name' => 'Shield Wall',
         'level_req' => 15,
         'cost' => 5000000,
-        'bonus_description' => '+10% Defense Bonus',
+        'income_bonus' => 0,
+        'defense_bonus' => 10, // Represents a 10% bonus
+        'fortification_bonus' => 500,
         'flavor_text' => 'Reinforced barriers that repel assaults effectively.'
     ],
     5 => [
         'name' => 'Bastion Citadel',
         'level_req' => 20,
         'cost' => 20000000,
-        'bonus_description' => '+500 Credits/Turn',
+        'income_bonus' => 500,
+        'defense_bonus' => 15, // Represents a 15% bonus
+        'fortification_bonus' => 1000,
         'flavor_text' => 'A heavily fortified stronghold with integrated vaults.'
     ]
 ];
@@ -147,7 +150,7 @@ $active_page = 'structures.php';
                                     <tr>
                                         <th class="p-2">Structure</th>
                                         <th class="p-2">Level Req.</th>
-                                        <th class="p-2">Bonus</th>
+                                        <th class="p-2">Bonuses</th>
                                         <th class="p-2">Cost</th>
                                         <th class="p-2">Action</th>
                                     </tr>
@@ -160,28 +163,31 @@ $active_page = 'structures.php';
                                             <p class="text-xs text-gray-500"><?php echo $structure['flavor_text']; ?></p>
                                         </td>
                                         <td class="p-2"><?php echo $structure['level_req']; ?></td>
-                                        <td class="p-2 text-cyan-300"><?php echo $structure['bonus_description']; ?></td>
+                                        <td class="p-2 text-cyan-300">
+                                            <?php 
+                                                // Build the bonus description string dynamically
+                                                $bonuses = [];
+                                                if ($structure['income_bonus'] > 0) $bonuses[] = '+' . number_format($structure['income_bonus']) . ' C/Turn';
+                                                if ($structure['defense_bonus'] > 0) $bonuses[] = '+' . $structure['defense_bonus'] . '% Defense';
+                                                if ($structure['fortification_bonus'] > 0) $bonuses[] = '+' . number_format($structure['fortification_bonus']) . ' Fort';
+                                                echo implode('<br>', $bonuses);
+                                            ?>
+                                        </td>
                                         <td class="p-2"><?php echo number_format($structure['cost']); ?></td>
                                         <td class="p-2">
                                             <?php
-                                            // This logic determines what button or text to show in the "Action" column.
                                             if ($user_stats['structure_level'] >= $level) {
-                                                // Player already has this structure or a higher one.
                                                 echo '<span class="font-bold text-green-400">Owned</span>';
                                             } elseif ($user_stats['structure_level'] == $level - 1) {
-                                                // This is the next available structure for the player to build.
                                                 if ($user_stats['level'] >= $structure['level_req'] && $user_stats['credits'] >= $structure['cost']) {
-                                                    // Player meets all requirements. Show the build form/button.
                                                     echo '<form action="build_structure.php" method="POST">';
                                                     echo '<input type="hidden" name="structure_level" value="' . $level . '">';
                                                     echo '<button type="submit" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-1 px-3 rounded-md text-xs">Build</button>';
                                                     echo '</form>';
                                                 } else {
-                                                    // Player does not meet requirements. Show a disabled button.
                                                     echo '<button class="bg-gray-600 text-gray-400 font-bold py-1 px-3 rounded-md text-xs cursor-not-allowed">Unavailable</button>';
                                                 }
                                             } else {
-                                                // This is a future structure the player cannot build yet.
                                                 echo '<span class="text-gray-500">Locked</span>';
                                             }
                                             ?>
