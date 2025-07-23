@@ -2,11 +2,14 @@
 session_start();
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){ header("location: index.html"); exit; }
 require_once "db_config.php";
+date_default_timezone_set('UTC');
 
-// Fetch user's level, xp, and points
-$sql = "SELECT level, experience, level_up_points FROM users WHERE id = ?";
+$user_id = $_SESSION['id'];
+
+// Fetch user's stats for the sidebar and main content
+$sql = "SELECT credits, untrained_citizens, level, attack_turns, last_updated, experience, level_up_points FROM users WHERE id = ?";
 if($stmt = mysqli_prepare($link, $sql)){
-    mysqli_stmt_bind_param($stmt, "i", $_SESSION["id"]);
+    mysqli_stmt_bind_param($stmt, "i", $user_id);
     mysqli_stmt_execute($stmt);
     $result = mysqli_stmt_get_result($stmt);
     $user_stats = mysqli_fetch_assoc($result);
@@ -15,6 +18,17 @@ if($stmt = mysqli_prepare($link, $sql)){
 mysqli_close($link);
 
 $xp_for_next_level = $user_stats['level'] * 1000; // XP needed for next level
+
+// Calculate time for the timer
+$turn_interval_minutes = 10;
+$last_updated = new DateTime($user_stats['last_updated'], new DateTimeZone('UTC'));
+$now = new DateTime('now', new DateTimeZone('UTC'));
+$time_since_last_update = $now->getTimestamp() - $last_updated->getTimestamp();
+$seconds_into_current_turn = $time_since_last_update % ($turn_interval_minutes * 60);
+$seconds_until_next_turn = ($turn_interval_minutes * 60) - $seconds_into_current_turn;
+if ($seconds_until_next_turn < 0) { $seconds_until_next_turn = 0; }
+$minutes_until_next_turn = floor($seconds_until_next_turn / 60);
+$seconds_remainder = $seconds_until_next_turn % 60;
 
 $active_page = 'structures.php'; // Set active page for navigation
 ?>
@@ -35,55 +49,84 @@ $active_page = 'structures.php'; // Set active page for navigation
 
             <?php include_once 'navigation.php'; ?>
             
-            <div class="p-4"> <!-- Added padding to match other pages -->
-                <form action="levelup.php" method="POST" class="space-y-4">
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 p-4">
+                <!-- Left Sidebar -->
+                <aside class="lg:col-span-1 space-y-4">
+                    <?php include 'advisor.php'; ?>
                     <div class="content-box rounded-lg p-4">
-                        <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-3">Level Up</h3>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                            <div class="bg-gray-800 p-3 rounded-md">
-                                <p class="text-sm">Current Level</p>
-                                <p class="text-lg font-bold text-white"><?php echo $user_stats['level']; ?></p>
-                            </div>
-                            <div class="bg-gray-800 p-3 rounded-md">
-                                <p class="text-sm">Experience</p>
-                                <p class="text-lg font-bold text-white"><?php echo number_format($user_stats['experience']); ?> / <?php echo number_format($xp_for_next_level); ?></p>
-                            </div>
-                            <div class="bg-gray-800 p-3 rounded-md">
-                                <p class="text-sm">Available Points</p>
-                                <p id="available-points" class="text-lg font-bold text-white"><?php echo $user_stats['level_up_points']; ?></p>
+                        <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-3">Stats</h3>
+                        <ul class="space-y-2 text-sm">
+                            <li class="flex justify-between"><span>Credits:</span> <span class="text-white font-semibold"><?php echo number_format($user_stats['credits']); ?></span></li>
+                            <li class="flex justify-between"><span>Untrained Citizens:</span> <span class="text-white font-semibold"><?php echo number_format($user_stats['untrained_citizens']); ?></span></li>
+                            <li class="flex justify-between"><span>Level:</span> <span class="text-white font-semibold"><?php echo $user_stats['level']; ?></span></li>
+                            <li class="flex justify-between"><span>Attack Turns:</span> <span class="text-white font-semibold"><?php echo $user_stats['attack_turns']; ?></span></li>
+                            <li class="flex justify-between border-t border-gray-600 pt-2 mt-2">
+                                <span>Next Turn In:</span>
+                                <span id="next-turn-timer" class="text-cyan-300 font-bold" data-seconds-until-next-turn="<?php echo $seconds_until_next_turn; ?>">
+                                    <?php echo sprintf('%02d:%02d', $minutes_until_next_turn, $seconds_remainder); ?>
+                                </span>
+                            </li>
+                            <li class="flex justify-between">
+                                <span>Dominion Time:</span>
+                                <span id="dominion-time" class="text-white font-semibold" data-hours="<?php echo $now->format('H'); ?>" data-minutes="<?php echo $now->format('i'); ?>" data-seconds="<?php echo $now->format('s'); ?>">
+                                    <?php echo $now->format('H:i:s'); ?>
+                                </span>
+                            </li>
+                        </ul>
+                    </div>
+                </aside>
+                
+                <!-- Main Content -->
+                <main class="lg:col-span-3">
+                    <form action="levelup.php" method="POST" class="space-y-4">
+                        <div class="content-box rounded-lg p-4">
+                            <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-3">Level Up</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                                <div class="bg-gray-800 p-3 rounded-md">
+                                    <p class="text-sm">Current Level</p>
+                                    <p class="text-lg font-bold text-white"><?php echo $user_stats['level']; ?></p>
+                                </div>
+                                <div class="bg-gray-800 p-3 rounded-md">
+                                    <p class="text-sm">Experience</p>
+                                    <p class="text-lg font-bold text-white"><?php echo number_format($user_stats['experience']); ?> / <?php echo number_format($xp_for_next_level); ?></p>
+                                </div>
+                                <div class="bg-gray-800 p-3 rounded-md">
+                                    <p class="text-sm">Available Points</p>
+                                    <p id="available-points" class="text-lg font-bold text-white"><?php echo $user_stats['level_up_points']; ?></p>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    <div class="content-box rounded-lg p-4">
-                         <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-3">Spend Points</h3>
-                         <p class="text-sm mb-4">Each point adds 1 unit. Distribute your available points below.</p>
-                         <div class="space-y-3">
-                            <div class="flex items-center justify-between">
-                                <label for="soldiers" class="font-bold text-white">Offense (Soldiers)</label>
-                                <input type="number" id="soldiers" name="soldiers" min="0" value="0" class="bg-gray-900 border border-gray-600 rounded-md w-24 text-center p-1 point-input">
-                            </div>
-                             <div class="flex items-center justify-between">
-                                <label for="guards" class="font-bold text-white">Defense (Guards)</label>
-                                <input type="number" id="guards" name="guards" min="0" value="0" class="bg-gray-900 border border-gray-600 rounded-md w-24 text-center p-1 point-input">
-                            </div>
-                             <div class="flex items-center justify-between">
-                                <label for="sentries" class="font-bold text-white">Fortification (Sentries)</label>
-                                <input type="number" id="sentries" name="sentries" min="0" value="0" class="bg-gray-900 border border-gray-600 rounded-md w-24 text-center p-1 point-input">
-                            </div>
-                             <div class="flex items-center justify-between">
-                                <label for="spies" class="font-bold text-white">Infiltration (Spies)</label>
-                                <input type="number" id="spies" name="spies" min="0" value="0" class="bg-gray-900 border border-gray-600 rounded-md w-24 text-center p-1 point-input">
-                            </div>
-                         </div>
-                    </div>
-                     <div class="content-box rounded-lg p-4 flex justify-between items-center">
-                        <div>
-                            <p>Total Points to Spend: <span id="total-spent" class="font-bold text-white">0</span></p>
+                        <div class="content-box rounded-lg p-4">
+                             <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-3">Spend Points</h3>
+                             <p class="text-sm mb-4">Each point adds 1 unit. Distribute your available points below.</p>
+                             <div class="space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <label for="soldiers" class="font-bold text-white">Offense (Soldiers)</label>
+                                    <input type="number" id="soldiers" name="soldiers" min="0" value="0" class="bg-gray-900 border border-gray-600 rounded-md w-24 text-center p-1 point-input">
+                                </div>
+                                 <div class="flex items-center justify-between">
+                                    <label for="guards" class="font-bold text-white">Defense (Guards)</label>
+                                    <input type="number" id="guards" name="guards" min="0" value="0" class="bg-gray-900 border border-gray-600 rounded-md w-24 text-center p-1 point-input">
+                                </div>
+                                 <div class="flex items-center justify-between">
+                                    <label for="sentries" class="font-bold text-white">Fortification (Sentries)</label>
+                                    <input type="number" id="sentries" name="sentries" min="0" value="0" class="bg-gray-900 border border-gray-600 rounded-md w-24 text-center p-1 point-input">
+                                </div>
+                                 <div class="flex items-center justify-between">
+                                    <label for="spies" class="font-bold text-white">Infiltration (Spies)</label>
+                                    <input type="number" id="spies" name="spies" min="0" value="0" class="bg-gray-900 border border-gray-600 rounded-md w-24 text-center p-1 point-input">
+                                </div>
+                             </div>
                         </div>
-                        <button type="submit" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-8 rounded-lg transition-colors">Upgrade Stats</button>
-                    </div>
-                </form>
+                         <div class="content-box rounded-lg p-4 flex justify-between items-center">
+                            <div>
+                                <p>Total Points to Spend: <span id="total-spent" class="font-bold text-white">0</span></p>
+                            </div>
+                            <button type="submit" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-3 px-8 rounded-lg transition-colors">Upgrade Stats</button>
+                        </div>
+                    </form>
+                </main>
             </div>
             </div> <!-- This closes the .main-bg div from navigation.php -->
         </div>
