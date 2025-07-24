@@ -1,5 +1,6 @@
 <?php
 /**
+ * test
  * Stellar Dominion - A.I. Advisor Module
  *
  * This file generates the advisor box content. It expects a variable
