@@ -2,13 +2,8 @@
 /**
  * attack.php
  *
- * This page is the primary interface for player-versus-player (PvP) combat.
- * It displays a list of all other players in the game, allowing the current
- * player to initiate an attack against them.
- *
- * Like the dashboard, it includes the "catch-up" mechanism to update the player's
- * resources upon loading. It also performs a special calculation to estimate the
- * current credits of potential targets for a more accurate display.
+ * Displays a list of potential targets for PvP combat.
+ * Provides a link to a detailed public profile for each user.
  */
 
 // --- SESSION AND DATABASE SETUP ---
@@ -19,9 +14,9 @@ date_default_timezone_set('UTC');
 
 $user_id = $_SESSION['id'];
 
-// --- CATCH-UP MECHANISM: PROCESS OVERDUE TURNS ---
-// This is the same logic as dashboard.php to ensure the current player's
-// resources are up-to-date before they perform any actions.
+// --- CATCH-UP MECHANISM (Same as before, no changes needed here) ---
+// This part of the code remains identical to your previous version.
+// It ensures the logged-in player's resources are up-to-date.
 $sql_check = "SELECT last_updated, workers, wealth_points FROM users WHERE id = ?";
 if($stmt_check = mysqli_prepare($link, $sql_check)) {
     mysqli_stmt_bind_param($stmt_check, "i", $user_id);
@@ -43,6 +38,7 @@ if($stmt_check = mysqli_prepare($link, $sql_check)) {
         $turns_to_process = floor($minutes_since_last_update / $turn_interval_minutes);
 
         if ($turns_to_process > 0) {
+            // ... (rest of the catch-up logic is unchanged) ...
             $gained_attack_turns = $turns_to_process * $attack_turns_per_turn;
             $gained_citizens = $turns_to_process * $citizens_per_turn;
             $worker_income = $user_check_data['workers'] * $credits_per_worker;
@@ -61,7 +57,6 @@ if($stmt_check = mysqli_prepare($link, $sql_check)) {
         }
     }
 }
-// --- END: CATCH-UP MECHANISM ---
 
 // --- DATA FETCHING FOR DISPLAY ---
 // Fetch the current player's stats for the sidebar.
@@ -73,14 +68,15 @@ $user_stats_result = mysqli_stmt_get_result($stmt_user_stats);
 $user_stats = mysqli_fetch_assoc($user_stats_result);
 mysqli_stmt_close($stmt_user_stats);
 
-// Fetch all other users to display as potential targets in the main list.
-$sql_targets = "SELECT id, character_name, credits, level, last_updated, workers, wealth_points FROM users WHERE id != ?";
+// Fetch all other users to display as potential targets.
+// NEW: Also fetching 'soldiers' and 'guards' to calculate army size.
+$sql_targets = "SELECT id, character_name, credits, level, last_updated, workers, wealth_points, soldiers, guards FROM users WHERE id != ?";
 $stmt_targets = mysqli_prepare($link, $sql_targets);
 mysqli_stmt_bind_param($stmt_targets, "i", $user_id);
 mysqli_stmt_execute($stmt_targets);
 $targets_result = mysqli_stmt_get_result($stmt_targets);
 
-// --- TIMER CALCULATIONS ---
+// --- TIMER & PAGE ID (Same as before) ---
 $turn_interval_minutes = 10;
 $last_updated = new DateTime($user_stats['last_updated'], new DateTimeZone('UTC'));
 $now = new DateTime('now', new DateTimeZone('UTC'));
@@ -90,8 +86,6 @@ $seconds_until_next_turn = ($turn_interval_minutes * 60) - $seconds_into_current
 if ($seconds_until_next_turn < 0) { $seconds_until_next_turn = 0; }
 $minutes_until_next_turn = floor($seconds_until_next_turn / 60);
 $seconds_remainder = $seconds_until_next_turn % 60;
-
-// --- PAGE IDENTIFICATION ---
 $active_page = 'attack.php';
 ?>
 <!DOCTYPE html>
@@ -106,13 +100,12 @@ $active_page = 'attack.php';
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body class="text-gray-400 antialiased">
-    <div class="min-h-screen bg-cover bg-center bg-fixed" style="background-image: url('https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%D%D&auto=format&fit=crop&w=1742&q=80');">
+    <div class="min-h-screen bg-cover bg-center bg-fixed" style="background-image: url('https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%D&auto=format&fit=crop&w=1742&q=80');">
         <div class="container mx-auto p-4 md:p-8">
 
             <?php include_once 'includes/navigation.php'; ?>
 
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 p-4">
-                <!-- Left Sidebar -->
                 <aside class="lg:col-span-1 space-y-4">
                     <?php include 'includes/advisor.php'; ?>
                     <div class="content-box rounded-lg p-4">
@@ -138,61 +131,51 @@ $active_page = 'attack.php';
                     </div>
                 </aside>
 
-                <!-- Main Content -->
                 <main class="lg:col-span-3">
                     <div class="content-box rounded-lg p-4">
-                        <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-3">Attack Users</h3>
+                        <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-3">Target List</h3>
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm text-left">
                                 <thead class="bg-gray-800">
                                     <tr>
                                         <th class="p-2">Commander</th>
+                                        <th class="p-2">Army Size</th>
                                         <th class="p-2">Credits (Est.)</th>
                                         <th class="p-2">Level</th>
-                                        <th class="p-2 text-center">Turns (1-10)</th>
-                                        <th class="p-2"></th>
+                                        <th class="p-2 text-right">Action</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <?php while($target = mysqli_fetch_assoc($targets_result)): ?>
                                     <?php
-                                        // --- TARGET CREDIT ESTIMATION ---
-                                        // To provide a more accurate credit value, we estimate the income the
-                                        // target has earned since their last turn, just like the catch-up mechanism.
-                                        // This gives the attacker a better idea of the potential plunder.
-                                        $turn_interval_minutes = 10;
-                                        $credits_per_worker = 50;
-                                        $base_income_per_turn = 5000;
-
+                                        // --- TARGET CREDIT ESTIMATION (Unchanged) ---
                                         $target_last_updated = new DateTime($target['last_updated']);
                                         $now_for_target = new DateTime();
                                         $minutes_since_target_update = ($now_for_target->getTimestamp() - $target_last_updated->getTimestamp()) / 60;
-                                        $target_turns_to_process = floor($minutes_since_target_update / $turn_interval_minutes);
-                                        
+                                        $target_turns_to_process = floor($minutes_since_target_update / 10);
                                         $target_current_credits = $target['credits'];
                                         if ($target_turns_to_process > 0) {
-                                            $worker_income = $target['workers'] * $credits_per_worker;
-                                            $total_base_income = $base_income_per_turn + $worker_income;
+                                            $worker_income = $target['workers'] * 50;
+                                            $total_base_income = 5000 + $worker_income;
                                             $wealth_bonus = 1 + ($target['wealth_points'] * 0.01);
                                             $income_per_turn = floor($total_base_income * $wealth_bonus);
                                             $gained_credits = $income_per_turn * $target_turns_to_process;
                                             $target_current_credits += $gained_credits;
                                         }
+
+                                        // --- NEW: Calculate Army Size ---
+                                        $army_size = $target['soldiers'] + $target['guards'];
                                     ?>
-                                    <tr class="border-t border-gray-700">
+                                    <tr class="border-t border-gray-700 hover:bg-gray-700/50">
                                         <td class="p-2 font-bold text-white"><?php echo htmlspecialchars($target['character_name']); ?></td>
+                                        <td class="p-2"><?php echo number_format($army_size); ?></td>
                                         <td class="p-2"><?php echo number_format($target_current_credits); ?></td>
                                         <td class="p-2"><?php echo $target['level']; ?></td>
-                                        <!-- Each row is its own form, submitting to process_attack.php -->
-                                        <form action="process_attack.php" method="POST">
-                                            <input type="hidden" name="defender_id" value="<?php echo $target['id']; ?>">
-                                            <td class="p-2 text-center">
-                                                <input type="number" name="attack_turns" min="1" max="10" value="1" class="bg-gray-900 border border-gray-600 rounded-md w-20 text-center p-1">
-                                            </td>
-                                            <td class="p-2 text-right">
-                                                <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-1 px-3 rounded-md text-xs">Attack</button>
-                                            </td>
-                                        </form>
+                                        <td class="p-2 text-right">
+                                            <a href="view_profile.php?id=<?php echo $target['id']; ?>" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-1 px-3 rounded-md text-xs">
+                                                Scout
+                                            </a>
+                                        </td>
                                     </tr>
                                     <?php endwhile; ?>
                                 </tbody>
@@ -201,7 +184,6 @@ $active_page = 'attack.php';
                     </div>
                 </main>
             </div>
-            </div> <!-- This closes the .main-bg div from navigation.php -->
         </div>
     </div>
     <script src="assets/js/main.js" defer></script>
