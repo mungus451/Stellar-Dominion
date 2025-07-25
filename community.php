@@ -58,13 +58,31 @@ $active_page = 'community.php';
             <?php if ($is_logged_in): ?>
                 <?php include_once 'includes/navigation.php'; ?>
             <?php else: ?>
-                <header class="text-center mb-4">
-                    <h1 class="text-5xl font-title text-cyan-400" style="text-shadow: 0 0 8px rgba(6, 182, 212, 0.7);">STELLAR DOMINION</h1>
-                    <a href="index.html" class="text-cyan-300 hover:text-white transition-colors mt-2 inline-block">Back to Home</a>
+                <!-- Header for Logged-Out Users -->
+                <header class="bg-dark-translucent backdrop-blur-md border-b border-cyan-400/20 rounded-lg p-4 mb-4">
+                    <div class="flex justify-between items-center">
+                        <a href="index.html" class="text-3xl font-bold tracking-wider font-title text-cyan-400">STELLAR DOMINION</a>
+                        <nav class="hidden md:flex space-x-8 text-lg">
+                            <a href="index.html#features" class="hover:text-cyan-300 transition-colors">Features</a>
+                            <a href="index.html#gameplay" class="hover:text-cyan-300 transition-colors">Gameplay</a>
+                            <a href="community.php" class="hover:text-cyan-300 transition-colors">Community</a>
+                        </nav>
+                        <button id="mobile-menu-button" class="md:hidden focus:outline-none">
+                            <i data-lucide="menu" class="text-white"></i>
+                        </button>
+                    </div>
+                    <!-- Mobile Menu -->
+                    <div id="mobile-menu" class="hidden md:hidden bg-dark-translucent mt-4 rounded-lg">
+                        <nav class="flex flex-col items-center space-y-4 px-6 py-4">
+                            <a href="index.html#features" class="hover:text-cyan-300 transition-colors">Features</a>
+                            <a href="index.html#gameplay" class="hover:text-cyan-300 transition-colors">Gameplay</a>
+                            <a href="community.php" class="hover:text-cyan-300 transition-colors">Community</a>
+                        </nav>
+                    </div>
                 </header>
             <?php endif; ?>
 
-            <div class="grid grid-cols-1 <?php if ($is_logged_in) echo 'lg:grid-cols-4'; ?> gap-4 p-4">
+            <div class="grid grid-cols-1 <?php if ($is_logged_in) echo 'lg:grid-cols-4'; ?> gap-4">
                 <?php if ($is_logged_in && $user_stats): ?>
                 <!-- Left Sidebar -->
                 <aside class="lg:col-span-1 space-y-4">
@@ -118,5 +136,21 @@ $active_page = 'community.php';
         </div>
     </div>
     <script src="assets/js/main.js" defer></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // This script is for the mobile menu on the logged-out view
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+
+            if(mobileMenuButton) {
+                mobileMenuButton.addEventListener('click', () => {
+                    mobileMenu.classList.toggle('hidden');
+                });
+            }
+            
+            // Initialize lucide icons on this page, including the mobile menu icon
+            lucide.createIcons();
+        });
+    </script>
 </body>
 </html>
