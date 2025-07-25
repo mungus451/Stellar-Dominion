@@ -49,6 +49,11 @@ $advice_repository = [
         "Vacation mode protects your empire from attacks while you are away. Use it wisely.",
         "Account settings are critical. Double-check your entries before saving."
     ],
+    'community.php' => [ // Added advice for the new page
+        "Join our Discord to stay up-to-date with the latest game news and announcements.",
+        "Community is key. Share your strategies and learn from fellow commanders.",
+        "Your feedback during this development phase is invaluable to us."
+    ],
 ];
 
 // Get the appropriate advice for the current page, or provide a default message.
