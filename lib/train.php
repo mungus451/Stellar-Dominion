@@ -65,7 +65,7 @@ $total_citizens_needed = array_sum($units_to_train);
 
 // If the player is trying to train 0 units, there's nothing to do. Redirect back.
 if ($total_citizens_needed <= 0) {
-    header("location: battle.php");
+    header("location: /battle.php");
     exit;
 }
 
@@ -102,14 +102,14 @@ try {
     // session and redirect back to the training page.
     if ($user['untrained_citizens'] < $total_citizens_needed) {
         $_SESSION['training_error'] = "Not enough untrained citizens. Required: " . number_format($total_citizens_needed) . ", Available: " . number_format($user['untrained_citizens']);
-        header("location: battle.php");
+        header("location: /battle.php");
         exit;
     }
     
     // Check if the player has enough credits.
     if ($user['credits'] < $total_credits_needed) {
         $_SESSION['training_error'] = "Not enough credits. Required: " . number_format($total_credits_needed) . ", Available: " . number_format($user['credits']);
-        header("location: battle.php");
+        header("location: /battle.php");
         exit;
     }
 
@@ -145,11 +145,11 @@ try {
     mysqli_rollback($link);
     // Set a generic error message for the user.
     $_SESSION['training_error'] = "A database error occurred. Please try again.";
-    header("location: battle.php");
+    header("location: /battle.php");
     exit;
 }
 
 // If the script completes successfully, redirect the user back to the training page.
-header("location: battle.php");
+header("location: /battle.php");
 exit;
 ?>
