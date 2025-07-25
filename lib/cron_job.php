@@ -10,27 +10,17 @@ function write_log($message) {
 
 write_log("Cron job started.");
 require_once "db_config.php";
-
-// --- GAME DATA: STRUCTURE DEFINITIONS ---
-// This array is needed here to calculate bonuses. It must match structures.php
-$structures = [
-    1 => ['income_bonus' => 100, 'defense_bonus' => 0, 'fortification_bonus' => 0],
-    2 => ['income_bonus' => 0, 'defense_bonus' => 5, 'fortification_bonus' => 0],
-    3 => ['income_bonus' => 250, 'defense_bonus' => 0, 'fortification_bonus' => 0],
-    4 => ['income_bonus' => 0, 'defense_bonus' => 10, 'fortification_bonus' => 500],
-    5 => ['income_bonus' => 500, 'defense_bonus' => 15, 'fortification_bonus' => 1000]
-];
+require_once "game_data.php"; // Include upgrade definitions
 
 // Game Settings
 $turn_interval_minutes = 10;
 $attack_turns_per_turn = 2;
-$citizens_per_turn = 1;
 $credits_per_worker = 50;
 $base_income_per_turn = 5000;
 
 // Main Logic
-// Fetch structure_level along with other user data
-$sql_select_users = "SELECT id, last_updated, workers, wealth_points, structure_level FROM users"; 
+// Fetch new upgrade columns along with other user data
+$sql_select_users = "SELECT id, last_updated, workers, wealth_points, economy_upgrade_level, population_level FROM users"; 
 $result = mysqli_query($link, $sql_select_users);
 
 if ($result) {
@@ -42,19 +32,24 @@ if ($result) {
         $turns_to_process = floor($minutes_since_last_update / $turn_interval_minutes);
 
         if ($turns_to_process > 0) {
-            // Calculate total income bonus from structures
-            $structure_income_bonus = 0;
-            for ($i = 1; $i <= $user['structure_level']; $i++) {
-                if (isset($structures[$i])) {
-                    $structure_income_bonus += $structures[$i]['income_bonus'];
-                }
+            // Calculate total economic bonus from upgrades
+            $total_economy_bonus_pct = 0;
+            for ($i = 1; $i <= $user['economy_upgrade_level']; $i++) {
+                $total_economy_bonus_pct += $upgrades['economy']['levels'][$i]['bonuses']['income'] ?? 0;
             }
+            $economy_upgrade_multiplier = 1 + ($total_economy_bonus_pct / 100);
 
-            // Calculate income with wealth bonus AND structure bonus
+            // Calculate total population bonus from upgrades
+            $citizens_per_turn = 1; // Base value
+            for ($i = 1; $i <= $user['population_level']; $i++) {
+                $citizens_per_turn += $upgrades['population']['levels'][$i]['bonuses']['citizens'] ?? 0;
+            }
+            
+            // Calculate income with all bonuses
             $worker_income = $user['workers'] * $credits_per_worker;
-            $total_base_income = $base_income_per_turn + $worker_income + $structure_income_bonus;
+            $total_base_income = $base_income_per_turn + $worker_income;
             $wealth_bonus = 1 + ($user['wealth_points'] * 0.01);
-            $income_per_turn = floor($total_base_income * $wealth_bonus);
+            $income_per_turn = floor(($total_base_income * $wealth_bonus) * $economy_upgrade_multiplier);
             $gained_credits = $income_per_turn * $turns_to_process;
             
             $gained_attack_turns = $turns_to_process * $attack_turns_per_turn;
