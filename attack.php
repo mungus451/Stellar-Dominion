@@ -69,12 +69,66 @@ $user_stats = mysqli_fetch_assoc($user_stats_result);
 mysqli_stmt_close($stmt_user_stats);
 
 // Fetch all other users to display as potential targets.
-// NEW: Also fetching 'soldiers' and 'guards' to calculate army size.
-$sql_targets = "SELECT id, character_name, credits, level, last_updated, workers, wealth_points, soldiers, guards FROM users WHERE id != ?";
+// Fetching all necessary fields for rank calculation.
+$sql_targets = "SELECT id, character_name, credits, level, last_updated, workers, wealth_points, soldiers, guards, sentries, spies, experience, structure_level FROM users WHERE id != ?";
 $stmt_targets = mysqli_prepare($link, $sql_targets);
 mysqli_stmt_bind_param($stmt_targets, "i", $user_id);
 mysqli_stmt_execute($stmt_targets);
 $targets_result = mysqli_stmt_get_result($stmt_targets);
+
+$ranked_targets = [];
+
+while ($target = mysqli_fetch_assoc($targets_result)) {
+    // --- RANK CALCULATION ---
+    // 1. Win/Loss Ratio
+    $wins = 0;
+    $losses = 0;
+    $sql_wins = "SELECT COUNT(*) as count FROM battle_logs WHERE attacker_id = ? AND outcome = 'victory'";
+    $stmt_wins = mysqli_prepare($link, $sql_wins);
+    mysqli_stmt_bind_param($stmt_wins, "i", $target['id']);
+    mysqli_stmt_execute($stmt_wins);
+    $wins_result = mysqli_stmt_get_result($stmt_wins);
+    $wins_row = mysqli_fetch_assoc($wins_result);
+    $wins = $wins_row['count'];
+    mysqli_stmt_close($stmt_wins);
+
+    $sql_losses = "SELECT COUNT(*) as count FROM battle_logs WHERE attacker_id = ? AND outcome = 'defeat'";
+    $stmt_losses = mysqli_prepare($link, $sql_losses);
+    mysqli_stmt_bind_param($stmt_losses, "i", $target['id']);
+    mysqli_stmt_execute($stmt_losses);
+    $losses_result = mysqli_stmt_get_result($stmt_losses);
+    $losses_row = mysqli_fetch_assoc($losses_result);
+    $losses = $losses_row['count'];
+    mysqli_stmt_close($stmt_losses);
+
+    $win_loss_ratio = ($losses > 0) ? ($wins / $losses) : $wins;
+
+    // 2. Total Units
+    $total_units = $target['soldiers'] + $target['guards'] + $target['sentries'] + $target['spies'] + $target['workers'];
+
+    // 3. Income Per Turn
+    $worker_income = $target['workers'] * 50;
+    $total_base_income = 5000 + $worker_income;
+    $wealth_bonus = 1 + ($target['wealth_points'] * 0.01);
+    $income_per_turn = floor($total_base_income * $wealth_bonus);
+
+    // 4. Ranking Score Formula
+    $rank_score = ($target['experience'] * 0.1) +
+                  ($total_units * 2) +
+                  ($win_loss_ratio * 1000) +
+                  ($target['workers'] * 5) +
+                  ($income_per_turn * 0.05) +
+                  ($target['structure_level'] * 500);
+
+    $target['rank_score'] = $rank_score;
+    $ranked_targets[] = $target;
+}
+
+// Sort targets by rank score
+usort($ranked_targets, function($a, $b) {
+    return $b['rank_score'] <=> $a['rank_score'];
+});
+
 
 // --- TIMER & PAGE ID (Same as before) ---
 $turn_interval_minutes = 10;
@@ -138,6 +192,7 @@ $active_page = 'attack.php';
                             <table class="w-full text-sm text-left">
                                 <thead class="bg-gray-800">
                                     <tr>
+                                        <th class="p-2">Rank</th>
                                         <th class="p-2">Commander</th>
                                         <th class="p-2">Army Size</th>
                                         <th class="p-2">Credits (Est.)</th>
@@ -146,7 +201,7 @@ $active_page = 'attack.php';
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php while($target = mysqli_fetch_assoc($targets_result)): ?>
+                                    <?php foreach ($ranked_targets as $target): ?>
                                     <?php
                                         // --- TARGET CREDIT ESTIMATION (Unchanged) ---
                                         $target_last_updated = new DateTime($target['last_updated']);
@@ -167,6 +222,7 @@ $active_page = 'attack.php';
                                         $army_size = $target['soldiers'] + $target['guards'];
                                     ?>
                                     <tr class="border-t border-gray-700 hover:bg-gray-700/50">
+                                        <td class="p-2 font-bold text-cyan-400"><?php echo number_format($target['rank_score']); ?></td>
                                         <td class="p-2 font-bold text-white"><?php echo htmlspecialchars($target['character_name']); ?></td>
                                         <td class="p-2"><?php echo number_format($army_size); ?></td>
                                         <td class="p-2"><?php echo number_format($target_current_credits); ?></td>
@@ -177,7 +233,7 @@ $active_page = 'attack.php';
                                             </a>
                                         </td>
                                     </tr>
-                                    <?php endwhile; ?>
+                                    <?php endforeach; ?>
                                 </tbody>
                             </table>
                         </div>
