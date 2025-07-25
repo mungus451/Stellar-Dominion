@@ -68,7 +68,7 @@ $can_attack = $is_logged_in && ($viewer_id != $profile_id);
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body class="text-gray-400 antialiased">
-    <div class="min-h-screen bg-cover bg-center bg-fixed" style="background-image: url('https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%D&auto=format&fit=crop&w=1742&q=80');">
+    <div class="min-h-screen bg-cover bg-center bg-fixed" style="background-image: url('https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1742&q=80');">
         <div class="container mx-auto p-4 md:p-8">
 
             <?php
@@ -95,7 +95,7 @@ $can_attack = $is_logged_in && ($viewer_id != $profile_id);
                         <?php if ($can_attack): ?>
                         <div class="bg-gray-800 rounded-lg p-4">
                              <h3 class="font-title text-lg text-red-400">Engage Target</h3>
-                            <form action="process_attack.php" method="POST" class="flex items-center justify-between mt-2">
+                            <form action="lib/process_attack.php" method="POST" class="flex items-center justify-between mt-2">
                                 <input type="hidden" name="defender_id" value="<?php echo $profile_data['id']; ?>">
                                 <div class="text-sm">
                                     <label for="attack_turns">Attack Turns (1-10):</label>
