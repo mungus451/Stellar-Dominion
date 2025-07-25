@@ -1,9 +1,4 @@
 
-### Updated File
-
-Here is the new content for the `attack.php` file:
-
-```php
 <?php
 /**
  * attack.php
