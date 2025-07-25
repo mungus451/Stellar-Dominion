@@ -80,7 +80,6 @@ $active_page = 'battle.php';
             <?php include_once 'includes/navigation.php'; ?>
 
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 p-4">
-                <!-- Left Sidebar -->
                 <aside class="lg:col-span-1 space-y-4">
                     <?php include 'includes/advisor.php'; ?>
                     <div class="content-box rounded-lg p-4">
@@ -106,9 +105,8 @@ $active_page = 'battle.php';
                     </div>
                 </aside>
 
-                <!-- Main Content: Training Form -->
                 <main class="lg:col-span-3">
-                    <form action="train.php" method="POST" class="space-y-4">
+                    <form action="lib/train.php" method="POST" class="space-y-4">
                         <?php
                         // Display any training-related error messages (e.g., "Not enough credits")
                         // that were set in 'train.php' and stored in the session.
@@ -119,7 +117,6 @@ $active_page = 'battle.php';
                             </div>
                         <?php endif; ?>
 
-                        <!-- Unit Training Sections -->
                         <div class="content-box rounded-lg p-4">
                             <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-3">Economy</h3>
                             <div class="flex items-center justify-between">
@@ -188,8 +185,7 @@ $active_page = 'battle.php';
                     </form>
                 </main>
             </div>
-            </div> <!-- This closes the .main-bg div from navigation.php -->
-        </div>
+            </div> </div>
     </div>
     <script src="assets/js/main.js" defer></script>
 </body>
