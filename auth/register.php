@@ -13,12 +13,29 @@ if(empty($email) || empty($character_name) || empty($password) || empty($race) |
     die("Please fill all required fields.");
 }
 
+// Set avatar path based on race
+$avatar_path = '';
+switch ($race) {
+    case 'Human':
+        $avatar_path = 'assets/img/human.png';
+        break;
+    case 'Cyborg':
+        $avatar_path = 'assets/img/cybord.png';
+        break;
+    case 'Mutant':
+        $avatar_path = 'assets/img/mutant.png';
+        break;
+    case 'The Shade':
+        $avatar_path = 'assets/img/shade.png';
+        break;
+}
+
 $password_hash = password_hash($password, PASSWORD_DEFAULT);
 
-$sql = "INSERT INTO users (email, character_name, password_hash, race, class, credits, untrained_citizens, level_up_points) VALUES (?, ?, ?, ?, ?, 100000, 1000, 1)";
+$sql = "INSERT INTO users (email, character_name, password_hash, race, class, credits, untrained_citizens, level_up_points, avatar_path) VALUES (?, ?, ?, ?, ?, 100000, 1000, 1, ?)";
 
 if($stmt = mysqli_prepare($link, $sql)){
-    mysqli_stmt_bind_param($stmt, "sssss", $email, $character_name, $password_hash, $race, $class);
+    mysqli_stmt_bind_param($stmt, "sssssiss", $email, $character_name, $password_hash, $race, $class, $avatar_path);
 
     if(mysqli_stmt_execute($stmt)){
         $_SESSION["loggedin"] = true;
