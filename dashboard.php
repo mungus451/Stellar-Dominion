@@ -4,20 +4,11 @@ session_start();
 date_default_timezone_set('UTC');
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){ header("location: index.html"); exit; }
 require_once "lib/db_config.php";
-
-// --- GAME DATA: STRUCTURE DEFINITIONS ---
-// This array is needed here to calculate bonuses. It must match structures.php
-$structures = [
-    1 => ['income_bonus' => 100, 'defense_bonus' => 0, 'fortification_bonus' => 0],
-    2 => ['income_bonus' => 0, 'defense_bonus' => 5, 'fortification_bonus' => 0],
-    3 => ['income_bonus' => 250, 'defense_bonus' => 0, 'fortification_bonus' => 0],
-    4 => ['income_bonus' => 0, 'defense_bonus' => 10, 'fortification_bonus' => 500],
-    5 => ['income_bonus' => 500, 'defense_bonus' => 15, 'fortification_bonus' => 1000]
-];
+require_once "lib/game_data.php"; // Include upgrade definitions
 
 // --- CATCH-UP MECHANISM: PROCESS OVERDUE TURNS ---
 $user_id = $_SESSION["id"];
-$sql_check = "SELECT last_updated, workers, wealth_points, structure_level FROM users WHERE id = ?";
+$sql_check = "SELECT last_updated, workers, wealth_points, economy_upgrade_level, population_level FROM users WHERE id = ?";
 if($stmt_check = mysqli_prepare($link, $sql_check)) {
     mysqli_stmt_bind_param($stmt_check, "i", $user_id);
     mysqli_stmt_execute($stmt_check);
@@ -33,24 +24,29 @@ if($stmt_check = mysqli_prepare($link, $sql_check)) {
         $turns_to_process = floor($minutes_since_last_update / $turn_interval_minutes);
 
         if ($turns_to_process > 0) {
-            // Calculate total income bonus from structures
-            $structure_income_bonus = 0;
-            for ($i = 1; $i <= $user_check_data['structure_level']; $i++) {
-                if (isset($structures[$i])) {
-                    $structure_income_bonus += $structures[$i]['income_bonus'];
-                }
+            // Calculate total economic bonus from upgrades
+            $total_economy_bonus_pct = 0;
+            for ($i = 1; $i <= $user_check_data['economy_upgrade_level']; $i++) {
+                $total_economy_bonus_pct += $upgrades['economy']['levels'][$i]['bonuses']['income'] ?? 0;
+            }
+            $economy_upgrade_multiplier = 1 + ($total_economy_bonus_pct / 100);
+
+            // Calculate total population bonus from upgrades
+            $citizens_per_turn = 1; // Base value
+            for ($i = 1; $i <= $user_check_data['population_level']; $i++) {
+                $citizens_per_turn += $upgrades['population']['levels'][$i]['bonuses']['citizens'] ?? 0;
             }
 
-            // Calculate income per turn including structure bonus
+            // Calculate income per turn
             $worker_income = $user_check_data['workers'] * 50;
-            $base_income_per_turn = 5000 + $worker_income + $structure_income_bonus;
+            $base_income_per_turn = 5000 + $worker_income;
             $wealth_bonus = 1 + ($user_check_data['wealth_points'] * 0.01);
-            $income_per_turn = floor($base_income_per_turn * $wealth_bonus);
+            $income_per_turn = floor(($base_income_per_turn * $wealth_bonus) * $economy_upgrade_multiplier);
             
             // Calculate total gains
             $gained_credits = $income_per_turn * $turns_to_process;
             $gained_attack_turns = $turns_to_process * 2;
-            $gained_citizens = $turns_to_process * 1;
+            $gained_citizens = $turns_to_process * $citizens_per_turn;
             
             $current_utc_time_str = gmdate('Y-m-d H:i:s');
             $sql_update = "UPDATE users SET attack_turns = attack_turns + ?, untrained_citizens = untrained_citizens + ?, credits = credits + ?, last_updated = ? WHERE id = ?";
@@ -76,40 +72,38 @@ if($stmt = mysqli_prepare($link, $sql)){
 }
 mysqli_close($link);
 
-// --- CALCULATE CUMULATIVE BONUSES FROM STRUCTURES ---
-$total_structure_income = 0;
-$total_structure_defense = 0;
-$total_structure_fortification = 0;
-for ($i = 1; $i <= $character_data['structure_level']; $i++) {
-    if (isset($structures[$i])) {
-        $total_structure_income += $structures[$i]['income_bonus'];
-        $total_structure_defense += $structures[$i]['defense_bonus'];
-        $total_structure_fortification += $structures[$i]['fortification_bonus'];
-    }
-}
+// --- CALCULATE CUMULATIVE BONUSES FROM UPGRADES ---
+$total_offense_bonus_pct = 0;
+for ($i = 1; $i <= $character_data['offense_upgrade_level']; $i++) { $total_offense_bonus_pct += $upgrades['offense']['levels'][$i]['bonuses']['offense'] ?? 0; }
+$offense_upgrade_multiplier = 1 + ($total_offense_bonus_pct / 100);
 
-// --- CALCULATE DERIVED STATS including structure bonuses ---
+$total_defense_bonus_pct = 0;
+for ($i = 1; $i <= $character_data['defense_upgrade_level']; $i++) { $total_defense_bonus_pct += $upgrades['defense']['levels'][$i]['bonuses']['defense'] ?? 0; }
+$defense_upgrade_multiplier = 1 + ($total_defense_bonus_pct / 100);
+
+$total_economy_bonus_pct = 0;
+for ($i = 1; $i <= $character_data['economy_upgrade_level']; $i++) { $total_economy_bonus_pct += $upgrades['economy']['levels'][$i]['bonuses']['income'] ?? 0; }
+$economy_upgrade_multiplier = 1 + ($total_economy_bonus_pct / 100);
+
+// --- CALCULATE DERIVED STATS including all bonuses ---
 $strength_bonus = 1 + ($character_data['strength_points'] * 0.01);
 $constitution_bonus = 1 + ($character_data['constitution_points'] * 0.01);
-$structure_defense_multiplier = 1 + ($total_structure_defense / 100);
 
-$offense_power = floor(($character_data['soldiers'] * 10) * $strength_bonus);
-$defense_rating = floor((($character_data['guards'] * 10) * $constitution_bonus) * $structure_defense_multiplier);
-$fortification = ($character_data['sentries'] * 10) + $total_structure_fortification;
+$offense_power = floor((($character_data['soldiers'] * 10) * $strength_bonus) * $offense_upgrade_multiplier);
+$defense_rating = floor((($character_data['guards'] * 10) * $constitution_bonus) * $defense_upgrade_multiplier);
+$fortification = ($character_data['sentries'] * 10); // Fortification from structures is now part of specific upgrades, can be added here if needed
 $infiltration = $character_data['spies'] * 10;
 
 $worker_income = $character_data['workers'] * 50;
-$total_base_income = 5000 + $worker_income + $total_structure_income;
+$total_base_income = 5000 + $worker_income;
 $wealth_bonus = 1 + ($character_data['wealth_points'] * 0.01);
-$credits_per_turn = floor($total_base_income * $wealth_bonus);
+$credits_per_turn = floor(($total_base_income * $wealth_bonus) * $economy_upgrade_multiplier);
 
 // --- TIMER CALCULATIONS ---
 $turn_interval_minutes = 10;
 $last_updated = new DateTime($character_data['last_updated'], new DateTimeZone('UTC'));
 $now = new DateTime('now', new DateTimeZone('UTC'));
-$time_since_last_update = $now->getTimestamp() - $last_updated->getTimestamp();
-$seconds_into_current_turn = $time_since_last_update % ($turn_interval_minutes * 60);
-$seconds_until_next_turn = ($turn_interval_minutes * 60) - $seconds_into_current_turn;
+$seconds_until_next_turn = ($turn_interval_minutes * 60) - (($now->getTimestamp() - $last_updated->getTimestamp()) % ($turn_interval_minutes * 60));
 if ($seconds_until_next_turn < 0) { $seconds_until_next_turn = 0; }
 $minutes_until_next_turn = floor($seconds_until_next_turn / 60);
 $seconds_remainder = $seconds_until_next_turn % 60;
@@ -129,14 +123,12 @@ $active_page = 'dashboard.php';
     <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body class="text-gray-400 antialiased">
-    <div class="min-h-screen bg-cover bg-center bg-fixed" style="background-image: url('https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%D%D&auto=format&fit=crop&w=1742&q=80');">
+    <div class="min-h-screen bg-cover bg-center bg-fixed" style="background-image: url('https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1742&q=80');">
         <div class="container mx-auto p-4 md:p-8">
             
             <?php include_once 'includes/navigation.php'; ?>
 
-            <!-- Main Content Grid -->
             <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 p-4">
-                <!-- Left Sidebar -->
                 <aside class="lg:col-span-1 space-y-4">
                     <?php include 'includes/advisor.php'; ?>
                     <div class="content-box rounded-lg p-4">
@@ -162,14 +154,12 @@ $active_page = 'dashboard.php';
                     </div>
                 </aside>
 
-                <!-- Center Content -->
                 <main class="lg:col-span-3 space-y-4">
                     <div class="content-box rounded-lg p-4 text-center">
                         <p class="font-semibold text-cyan-300">Welcome, Commander <?php echo htmlspecialchars($character_data['character_name']); ?> - <?php echo htmlspecialchars(strtoupper($character_data['race'])); ?> <?php echo htmlspecialchars(strtoupper($character_data['class'])); ?></p>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <!-- Dominion Stats -->
                         <div class="content-box rounded-lg p-4">
                             <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-3">Dominion Stats</h3>
                             <ul class="space-y-2 text-sm">
@@ -180,7 +170,6 @@ $active_page = 'dashboard.php';
                                 <li class="flex justify-between"><span>Infiltration:</span> <span class="text-white font-semibold"><?php echo number_format($infiltration); ?></span></li>
                             </ul>
                         </div>
-                        <!-- Fleet Stats -->
                         <div class="content-box rounded-lg p-4">
                             <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-3">Fleet Stats</h3>
                             <ul class="space-y-2 text-sm">
@@ -193,8 +182,7 @@ $active_page = 'dashboard.php';
                     </div>
                 </main>
             </div>
-            </div> <!-- This closes the .main-bg div from navigation.php -->
-        </div>
+            </div> </div>
     </div>
     <script src="assets/js/main.js" defer></script>
 </body>
