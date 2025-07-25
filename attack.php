@@ -1,10 +1,3 @@
-Of course. I've updated the ranking system to display ranks starting from 1 for the top player.
-
-I have updated the `attack.php` file to correctly calculate and display player ranks. Here is a summary of the change:
-
-  * **Sequential Ranking**: After calculating the `rank_score` for each player and sorting the list, I added a loop that assigns a sequential rank (1, 2, 3, etc.) to each player. The "Rank" column on the attack page now shows this sequential rank instead of the raw score.
-
-This change was contained entirely within the `attack.php` file.
 
 ### Updated File
 
