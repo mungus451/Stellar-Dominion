@@ -30,11 +30,15 @@ if($stmt = mysqli_prepare($link, $sql)){
                     header("location: /dashboard.php");
                     exit;
                 } else{
-                    echo "Invalid password.";
+                    // Incorrect password
+                    header("location: /index.html?error=1");
+                    exit;
                 }
             }
         } else{
-            echo "No account found with that email.";
+            // No account found
+            header("location: /index.html?error=1");
+            exit;
         }
     } else{
         echo "Oops! Something went wrong. Please try again later.";
