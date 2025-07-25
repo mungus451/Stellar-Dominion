@@ -15,8 +15,6 @@ date_default_timezone_set('UTC');
 $user_id = $_SESSION['id'];
 
 // --- CATCH-UP MECHANISM (Same as before, no changes needed here) ---
-// This part of the code remains identical to your previous version.
-// It ensures the logged-in player's resources are up-to-date.
 $sql_check = "SELECT last_updated, workers, wealth_points FROM users WHERE id = ?";
 if($stmt_check = mysqli_prepare($link, $sql_check)) {
     mysqli_stmt_bind_param($stmt_check, "i", $user_id);
@@ -38,7 +36,6 @@ if($stmt_check = mysqli_prepare($link, $sql_check)) {
         $turns_to_process = floor($minutes_since_last_update / $turn_interval_minutes);
 
         if ($turns_to_process > 0) {
-            // ... (rest of the catch-up logic is unchanged) ...
             $gained_attack_turns = $turns_to_process * $attack_turns_per_turn;
             $gained_citizens = $turns_to_process * $citizens_per_turn;
             $worker_income = $user_check_data['workers'] * $credits_per_worker;
@@ -70,7 +67,7 @@ mysqli_stmt_close($stmt_user_stats);
 
 // Fetch all users to display as potential targets.
 // Fetching all necessary fields for rank calculation.
-$sql_targets = "SELECT id, character_name, credits, level, last_updated, workers, wealth_points, soldiers, guards, sentries, spies, experience, structure_level FROM users";
+$sql_targets = "SELECT id, character_name, credits, level, last_updated, workers, wealth_points, soldiers, guards, sentries, spies, experience, fortification_level FROM users";
 $stmt_targets = mysqli_prepare($link, $sql_targets);
 mysqli_stmt_execute($stmt_targets);
 $targets_result = mysqli_stmt_get_result($stmt_targets);
@@ -117,7 +114,7 @@ while ($target = mysqli_fetch_assoc($targets_result)) {
                   ($win_loss_ratio * 1000) +
                   ($target['workers'] * 5) +
                   ($income_per_turn * 0.05) +
-                  ($target['structure_level'] * 500);
+                  ($target['fortification_level'] * 500);
 
     $target['rank_score'] = $rank_score;
     $ranked_targets[] = $target;
@@ -234,7 +231,7 @@ $active_page = 'attack.php';
                                         <td class="p-2"><?php echo number_format($target_current_credits); ?></td>
                                         <td class="p-2"><?php echo $target['level']; ?></td>
                                         <td class="p-2 text-right">
-                                            <?php if ($target['id'] != $user_id): ?>
+                                             <?php if ($target['id'] != $user_id): ?>
                                                 <a href="view_profile.php?id=<?php echo $target['id']; ?>" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-1 px-3 rounded-md text-xs">
                                                     Scout
                                                 </a>
