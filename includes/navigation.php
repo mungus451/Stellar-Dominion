@@ -22,7 +22,7 @@ $main_nav_links = [
     'HOME' => 'dashboard.php',
     'BATTLE' => 'battle.php',
     'STRUCTURES' => 'structures.php',
-    'COMMUNITY' => '#', // A placeholder link for a future feature.
+    'COMMUNITY' => 'community.php', // Updated link
     'SIGN OUT' => 'auth/logout.php'
 ];
 
@@ -35,14 +35,17 @@ $sub_nav_links = [
         'Levels' => 'levels.php',
         'Profile' => 'profile.php',
         'Settings' => 'settings.php'
-    ],    'BATTLE' => [
+    ],
+    'BATTLE' => [
         'Attack' => 'attack.php',
         'Training' => 'battle.php',
         'War History' => 'war_history.php'
     ],
     'STRUCTURES' => [
         // This category currently has no sub-navigation.
-        // The sub-nav bar will not be displayed when this category is active.
+    ],
+    'COMMUNITY' => [
+        // This category currently has no sub-navigation.
     ]
 ];
 
@@ -57,10 +60,11 @@ if (in_array($active_page, ['battle.php', 'attack.php', 'war_history.php'])) {
     $active_main_category = 'BATTLE';
 } elseif (in_array($active_page, ['structures.php'])) {
     $active_main_category = 'STRUCTURES';
+} elseif (in_array($active_page, ['community.php'])) { // Added community page
+    $active_main_category = 'COMMUNITY';
 }
 // Note: 'HOME' is the default, so we don't need a separate check for it.
 // The pages 'dashboard.php', 'levels.php', 'profile.php', and 'settings.php' will correctly default to HOME.
-// Note: You can add more 'elseif' conditions here for new categories.
 
 ?>
 <!-- The HTML output begins here. -->
@@ -78,7 +82,7 @@ if (in_array($active_page, ['battle.php', 'attack.php', 'war_history.php'])) {
         // Loop through the main navigation links and generate the HTML for each one.
         foreach ($main_nav_links as $title => $link):
         ?>
-            <a href="<?php echo $link; ?>" 
+            <a href="<?php echo $link; ?>"
                class="nav-link <?php
                     // Conditionally add the 'active' class if the current link's category
                     // matches the determined active category.
@@ -99,7 +103,7 @@ if (in_array($active_page, ['battle.php', 'attack.php', 'war_history.php'])) {
         // Loop through the sub-navigation links for the active category.
         foreach ($sub_nav_links[$active_main_category] as $title => $link):
         ?>
-             <a href="<?php echo $link; ?>" 
+             <a href="<?php echo $link; ?>"
                 class="<?php
                     // Conditionally add styling if the sub-nav link matches the exact active page.
                     echo ($link == $active_page) ? 'font-semibold text-white' : 'text-gray-400 hover:text-white';
