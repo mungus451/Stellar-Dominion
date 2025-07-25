@@ -3,17 +3,8 @@ session_start();
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){ header("location: index.html"); exit; }
 
 require_once "db_config.php";
+require_once "game_data.php"; // Include upgrade definitions
 date_default_timezone_set('UTC');
-
-// --- GAME DATA: STRUCTURE DEFINITIONS ---
-// This array is needed here to calculate bonuses. It must match structures.php
-$structures = [
-    1 => ['income_bonus' => 100, 'defense_bonus' => 0, 'fortification_bonus' => 0],
-    2 => ['income_bonus' => 0, 'defense_bonus' => 5, 'fortification_bonus' => 0],
-    3 => ['income_bonus' => 250, 'defense_bonus' => 0, 'fortification_bonus' => 0],
-    4 => ['income_bonus' => 0, 'defense_bonus' => 10, 'fortification_bonus' => 500],
-    5 => ['income_bonus' => 500, 'defense_bonus' => 15, 'fortification_bonus' => 1000]
-];
 
 // Input Validation
 $attacker_id = $_SESSION["id"];
@@ -21,7 +12,7 @@ $defender_id = isset($_POST['defender_id']) ? (int)$_POST['defender_id'] : 0;
 $attack_turns = isset($_POST['attack_turns']) ? (int)$_POST['attack_turns'] : 0;
 if ($defender_id <= 0 || $attack_turns < 1 || $attack_turns > 10) { header("location: attack.php"); exit; }
 
-// Level Up Function
+// Level Up Function (unchanged)
 function check_and_process_levelup($user_id, $link) {
     $sql = "SELECT level, experience FROM users WHERE id = ? FOR UPDATE";
     $stmt = mysqli_prepare($link, $sql);
@@ -45,16 +36,16 @@ function check_and_process_levelup($user_id, $link) {
 // Battle Logic
 mysqli_begin_transaction($link);
 try {
-    // Get attacker's data
-    $sql_attacker = "SELECT character_name, attack_turns, soldiers, credits, strength_points FROM users WHERE id = ? FOR UPDATE";
+    // Get attacker's data including new upgrade levels
+    $sql_attacker = "SELECT character_name, attack_turns, soldiers, credits, strength_points, offense_upgrade_level FROM users WHERE id = ? FOR UPDATE";
     $stmt_attacker = mysqli_prepare($link, $sql_attacker);
     mysqli_stmt_bind_param($stmt_attacker, "i", $attacker_id);
     mysqli_stmt_execute($stmt_attacker);
     $attacker = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_attacker));
     mysqli_stmt_close($stmt_attacker);
 
-    // Get defender's data including structure_level
-    $sql_defender = "SELECT character_name, guards, credits, constitution_points, structure_level FROM users WHERE id = ? FOR UPDATE";
+    // Get defender's data including new upgrade levels
+    $sql_defender = "SELECT character_name, guards, credits, constitution_points, defense_upgrade_level FROM users WHERE id = ? FOR UPDATE";
     $stmt_defender = mysqli_prepare($link, $sql_defender);
     mysqli_stmt_bind_param($stmt_defender, "i", $defender_id);
     mysqli_stmt_execute($stmt_defender);
@@ -63,33 +54,30 @@ try {
 
     if ($attacker['attack_turns'] < $attack_turns) { throw new Exception("Not enough attack turns."); }
 
-    // --- BATTLE CALCULATION with structure bonuses ---
-    // Calculate total defense bonus from defender's structures
-    $total_structure_defense = 0;
-    for ($i = 1; $i <= $defender['structure_level']; $i++) {
-        if (isset($structures[$i])) {
-            $total_structure_defense += $structures[$i]['defense_bonus'];
-        }
-    }
-
+    // --- BATTLE CALCULATION with all bonuses ---
     // Attacker damage calculation
+    $total_offense_bonus_pct = 0;
+    for ($i = 1; $i <= $attacker['offense_upgrade_level']; $i++) { $total_offense_bonus_pct += $upgrades['offense']['levels'][$i]['bonuses']['offense'] ?? 0; }
+    $offense_upgrade_multiplier = 1 + ($total_offense_bonus_pct / 100);
+    
     $attacker_base_damage = 0;
     for ($i = 0; $i < $attacker['soldiers'] * $attack_turns; $i++) { $attacker_base_damage += rand(8, 12); }
     $strength_bonus = 1 + ($attacker['strength_points'] * 0.01);
-    $attacker_damage = floor($attacker_base_damage * $strength_bonus);
+    $attacker_damage = floor(($attacker_base_damage * $strength_bonus) * $offense_upgrade_multiplier);
 
-    // Defender damage calculation including constitution AND structure bonuses
+    // Defender damage calculation
+    $total_defense_bonus_pct = 0;
+    for ($i = 1; $i <= $defender['defense_upgrade_level']; $i++) { $total_defense_bonus_pct += $upgrades['defense']['levels'][$i]['bonuses']['defense'] ?? 0; }
+    $defense_upgrade_multiplier = 1 + ($total_defense_bonus_pct / 100);
+
     $defender_base_damage = 0;
     for ($i = 0; $i < $defender['guards']; $i++) { $defender_base_damage += rand(8, 12); }
     $constitution_bonus = 1 + ($defender['constitution_points'] * 0.01);
-    $structure_defense_multiplier = 1 + ($total_structure_defense / 100);
-    $defender_damage = floor(($defender_base_damage * $constitution_bonus) * $structure_defense_multiplier);
+    $defender_damage = floor(($defender_base_damage * $constitution_bonus) * $defense_upgrade_multiplier);
 
-
-    // XP Calculation
+    // XP Calculation, Plunder, and Database Updates (rest of the script is largely the same)
     $attacker_xp_gained = floor($attacker_damage / 10);
     $defender_xp_gained = floor($defender_damage / 10);
-
     $credits_stolen = 0;
     $outcome = 'defeat';
 
