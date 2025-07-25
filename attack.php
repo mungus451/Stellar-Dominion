@@ -1,4 +1,3 @@
-
 <?php
 /**
  * attack.php
@@ -69,11 +68,10 @@ $user_stats_result = mysqli_stmt_get_result($stmt_user_stats);
 $user_stats = mysqli_fetch_assoc($user_stats_result);
 mysqli_stmt_close($stmt_user_stats);
 
-// Fetch all other users to display as potential targets.
+// Fetch all users to display as potential targets.
 // Fetching all necessary fields for rank calculation.
-$sql_targets = "SELECT id, character_name, credits, level, last_updated, workers, wealth_points, soldiers, guards, sentries, spies, experience, structure_level FROM users WHERE id != ?";
+$sql_targets = "SELECT id, character_name, credits, level, last_updated, workers, wealth_points, soldiers, guards, sentries, spies, experience, structure_level FROM users";
 $stmt_targets = mysqli_prepare($link, $sql_targets);
-mysqli_stmt_bind_param($stmt_targets, "i", $user_id);
 mysqli_stmt_execute($stmt_targets);
 $targets_result = mysqli_stmt_get_result($stmt_targets);
 
@@ -229,16 +227,20 @@ $active_page = 'attack.php';
                                         // --- NEW: Calculate Army Size ---
                                         $army_size = $target['soldiers'] + $target['guards'];
                                     ?>
-                                    <tr class="border-t border-gray-700 hover:bg-gray-700/50">
+                                    <tr class="border-t border-gray-700 hover:bg-gray-700/50 <?php if ($target['id'] == $user_id) echo 'bg-cyan-900/30'; ?>">
                                         <td class="p-2 font-bold text-cyan-400"><?php echo $target['rank']; ?></td>
                                         <td class="p-2 font-bold text-white"><?php echo htmlspecialchars($target['character_name']); ?></td>
                                         <td class="p-2"><?php echo number_format($army_size); ?></td>
                                         <td class="p-2"><?php echo number_format($target_current_credits); ?></td>
                                         <td class="p-2"><?php echo $target['level']; ?></td>
                                         <td class="p-2 text-right">
-                                            <a href="view_profile.php?id=<?php echo $target['id']; ?>" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-1 px-3 rounded-md text-xs">
-                                                Scout
-                                            </a>
+                                            <?php if ($target['id'] != $user_id): ?>
+                                                <a href="view_profile.php?id=<?php echo $target['id']; ?>" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-1 px-3 rounded-md text-xs">
+                                                    Scout
+                                                </a>
+                                            <?php else: ?>
+                                                <span class="text-gray-500 text-xs italic">This is you</span>
+                                            <?php endif; ?>
                                         </td>
                                     </tr>
                                     <?php endforeach; ?>
@@ -253,4 +255,3 @@ $active_page = 'attack.php';
     <script src="assets/js/main.js" defer></script>
 </body>
 </html>
-```
