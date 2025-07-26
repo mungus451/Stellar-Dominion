@@ -66,8 +66,8 @@ $user_stats = mysqli_fetch_assoc($user_stats_result);
 mysqli_stmt_close($stmt_user_stats);
 
 // Fetch all users to display as potential targets.
-// Fetching all necessary fields for rank calculation.
-$sql_targets = "SELECT id, character_name, credits, level, last_updated, workers, wealth_points, soldiers, guards, sentries, spies, experience, fortification_level FROM users";
+// Fetching all necessary fields for rank calculation and new display requirements.
+$sql_targets = "SELECT id, character_name, race, class, avatar_path, credits, level, last_updated, workers, wealth_points, soldiers, guards, sentries, spies, experience, fortification_level FROM users";
 $stmt_targets = mysqli_prepare($link, $sql_targets);
 mysqli_stmt_execute($stmt_targets);
 $targets_result = mysqli_stmt_get_result($stmt_targets);
@@ -99,7 +99,7 @@ while ($target = mysqli_fetch_assoc($targets_result)) {
 
     $win_loss_ratio = ($losses > 0) ? ($wins / $losses) : $wins;
 
-    // 2. Total Units
+    // 2. Total Units (Population)
     $total_units = $target['soldiers'] + $target['guards'] + $target['sentries'] + $target['spies'] + $target['workers'];
 
     // 3. Income Per Turn
@@ -117,6 +117,7 @@ while ($target = mysqli_fetch_assoc($targets_result)) {
                   ($target['fortification_level'] * 500);
 
     $target['rank_score'] = $rank_score;
+    $target['population'] = $total_units; // Store population for display
     $ranked_targets[] = $target;
 }
 
@@ -125,10 +126,14 @@ usort($ranked_targets, function($a, $b) {
     return $b['rank_score'] <=> $a['rank_score'];
 });
 
-// Assign ranks
+// Assign ranks and find current user's rank
 $rank = 1;
+$current_user_rank = 'N/A';
 foreach ($ranked_targets as &$target) {
     $target['rank'] = $rank++;
+    if ($target['id'] == $user_id) {
+        $current_user_rank = $target['rank'];
+    }
 }
 unset($target);
 
@@ -191,14 +196,23 @@ $active_page = 'attack.php';
                 <main class="lg:col-span-3">
                     <div class="content-box rounded-lg p-4">
                         <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-3">Target List</h3>
+                        
+                        <div class="flex items-center space-x-2 mb-4">
+                            <button class="bg-gray-700/50 text-white font-semibold py-2 px-4 rounded-lg text-sm">Sorted By: Level</button>
+                            <div class="bg-gray-700/50 text-white font-semibold py-2 px-4 rounded-lg text-sm">
+                                Your Lvl Rank: <?php echo $current_user_rank; ?>
+                            </div>
+                             <button class="bg-gray-700/50 text-white font-semibold py-2 px-4 rounded-lg text-sm">Go to My Rank</button>
+                        </div>
+
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm text-left">
                                 <thead class="bg-gray-800">
                                     <tr>
-                                        <th class="p-2">Rank</th>
-                                        <th class="p-2">Commander</th>
-                                        <th class="p-2">Army Size</th>
-                                        <th class="p-2">Credits (Est.)</th>
+                                        <th class="p-2">Lvl Rank</th>
+                                        <th class="p-2">Username</th>
+                                        <th class="p-2">Gold</th>
+                                        <th class="p-2">Population</th>
                                         <th class="p-2">Level</th>
                                         <th class="p-2 text-right">Action</th>
                                     </tr>
@@ -220,15 +234,28 @@ $active_page = 'attack.php';
                                             $gained_credits = $income_per_turn * $target_turns_to_process;
                                             $target_current_credits += $gained_credits;
                                         }
-
-                                        // --- NEW: Calculate Army Size ---
-                                        $army_size = $target['soldiers'] + $target['guards'];
                                     ?>
                                     <tr class="border-t border-gray-700 hover:bg-gray-700/50 <?php if ($target['id'] == $user_id) echo 'bg-cyan-900/30'; ?>">
                                         <td class="p-2 font-bold text-cyan-400"><?php echo $target['rank']; ?></td>
-                                        <td class="p-2 font-bold text-white"><?php echo htmlspecialchars($target['character_name']); ?></td>
-                                        <td class="p-2"><?php echo number_format($army_size); ?></td>
+                                        <td class="p-2">
+                                            <div class="flex items-center">
+                                                <div class="relative mr-3">
+                                                    <img src="<?php echo htmlspecialchars($target['avatar_path'] ? $target['avatar_path'] : 'https://via.placeholder.com/40'); ?>" alt="Avatar" class="w-10 h-10">
+                                                    <?php
+                                                        $now_ts = time();
+                                                        $last_seen_ts = strtotime($target['last_updated']);
+                                                        $is_online = ($now_ts - $last_seen_ts) < 900; // 15 minute online threshold
+                                                    ?>
+                                                    <span class="absolute bottom-0 right-0 block h-3 w-3 rounded-full <?php echo $is_online ? 'bg-green-500' : 'bg-red-500'; ?> border-2 border-gray-800" title="<?php echo $is_online ? 'Online' : 'Offline'; ?>"></span>
+                                                </div>
+                                                <div>
+                                                    <p class="font-bold text-white"><?php echo htmlspecialchars($target['character_name']); ?></p>
+                                                    <p class="text-xs text-gray-500"><?php echo htmlspecialchars(strtoupper($target['race'] . ' ' . $target['class'])); ?></p>
+                                                </div>
+                                            </div>
+                                        </td>
                                         <td class="p-2"><?php echo number_format($target_current_credits); ?></td>
+                                        <td class="p-2"><?php echo number_format($target['population']); ?></td>
                                         <td class="p-2"><?php echo $target['level']; ?></td>
                                         <td class="p-2 text-right">
                                              <?php if ($target['id'] != $user_id): ?>
