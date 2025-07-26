@@ -33,7 +33,7 @@ include_once 'includes/public_header.php';
 
             <div class="content-box rounded-lg p-8">
                 <h2 class="font-title text-3xl text-cyan-400 mb-4">Forging Your Legions: Unit Training</h2>
-                <p class="text-lg mb-4">Your population begins as 'Untrained Citizens,' a raw resource waiting to be molded. On the `battle.php` page, you can transform these citizens into a variety of specialized units, each with a specific role and credit cost. A high 'Charisma' stat reduces the cost of all units, rewarding diplomatic proficiency with economic efficiency.</p>
+                <p class="text-lg mb-4">Your population begins as 'Untrained Citizens,' a raw resource waiting to be molded. On the `Training` page, you can transform these citizens into a variety of specialized units, each with a specific role and credit cost. A high 'Charisma' stat reduces the cost of all units, rewarding diplomatic proficiency with economic efficiency.</p>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                     <div class="border border-gray-700 p-4 rounded-lg">
                         <h3 class="font-semibold text-xl text-white">Economic Units</h3>
