@@ -145,8 +145,8 @@ document.addEventListener('DOMContentLoaded', () => {
             trainTab.classList.remove('hidden');
             disbandTabContent.classList.add('hidden');
             trainTabBtn.classList.add('border-cyan-400', 'text-white');
-            trainTabBtn.classList.remove('border-transparent', 'text-gray-400');
-            disbandTabBtn.classList.add('border-transparent', 'text-gray-400');
+            trainTabBtn.classList.remove('border-transparent', 'text-gray-300');
+            disbandTabBtn.classList.add('border-transparent', 'text-gray-300');
             disbandTabBtn.classList.remove('border-cyan-400', 'text-white');
         });
 
@@ -154,8 +154,8 @@ document.addEventListener('DOMContentLoaded', () => {
             disbandTabContent.classList.remove('hidden');
             trainTab.classList.add('hidden');
             disbandTabBtn.classList.add('border-cyan-400', 'text-white');
-            disbandTabBtn.classList.remove('border-transparent', 'text-gray-400');
-            trainTabBtn.classList.add('border-transparent', 'text-gray-400');
+            disbandTabBtn.classList.remove('border-transparent', 'text-gray-300');
+            trainTabBtn.classList.add('border-transparent', 'text-gray-300');
             trainTabBtn.classList.remove('border-cyan-400', 'text-white');
         });
 
@@ -180,13 +180,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
         trainForm.querySelectorAll('.train-max-btn').forEach(btn => {
             btn.addEventListener('click', e => {
-                const input = e.currentTarget.previousElementSibling;
-                const baseCost = parseInt(input.dataset.cost);
+                const clickedInput = e.currentTarget.previousElementSibling;
+
+                // 1. Calculate resources used by OTHER inputs
+                let otherInputsCost = 0;
+                let otherInputsCitizens = 0;
+                trainInputs.forEach(input => {
+                    if (input !== clickedInput) {
+                        const amount = parseInt(input.value) || 0;
+                        otherInputsCitizens += amount;
+                        if (amount > 0) {
+                            const baseCost = parseInt(input.dataset.cost);
+                            otherInputsCost += amount * Math.floor(baseCost * charismaDiscount);
+                        }
+                    }
+                });
+
+                // 2. Calculate remaining resources
+                const remainingCredits = availableCredits - otherInputsCost;
+                const remainingCitizens = availableCitizens - otherInputsCitizens;
+
+                // 3. Calculate max for the clicked input
+                const baseCost = parseInt(clickedInput.dataset.cost);
                 const discountedCost = Math.floor(baseCost * charismaDiscount);
 
-                // Calculate max possible based on both credits and citizens
-                const maxByCredits = discountedCost > 0 ? Math.floor(availableCredits / discountedCost) : Infinity;
-                input.value = Math.max(0, Math.min(maxByCredits, availableCitizens));
+                const maxByCredits = discountedCost > 0 ? Math.floor(remainingCredits / discountedCost) : Infinity;
+                const maxForThisUnit = Math.max(0, Math.min(maxByCredits, remainingCitizens));
+                
+                // 4. Set the value
+                clickedInput.value = maxForThisUnit;
+
+                // 5. Update total display
                 updateTrainingCost();
             });
         });
