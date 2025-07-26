@@ -121,125 +121,126 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
     
-    // --- Training & Disband Page Logic (battle.php) ---
-    const trainTab = document.getElementById('train-tab-content');
-    if (trainTab) {
-        const trainForm = document.getElementById('train-form');
-        const disbandForm = document.getElementById('disband-form');
-        const trainTabBtn = document.getElementById('train-tab-btn');
-        const disbandTabBtn = document.getElementById('disband-tab-btn');
-        const disbandTabContent = document.getElementById('disband-tab-content');
+// --- Training & Disband Page Logic (battle.php) ---
+const trainTab = document.getElementById('train-tab-content');
+if (trainTab) {
+    const trainForm = document.getElementById('train-form');
+    const disbandForm = document.getElementById('disband-form');
+    const trainTabBtn = document.getElementById('train-tab-btn');
+    const disbandTabBtn = document.getElementById('disband-tab-btn');
+    const disbandTabContent = document.getElementById('disband-tab-content');
 
-        const availableCitizensEl = document.getElementById('available-citizens');
-        const availableCreditsEl = document.getElementById('available-credits');
-        const totalCostEl = document.getElementById('total-build-cost');
-        const totalRefundEl = document.getElementById('total-refund-value');
+    const availableCitizensEl = document.getElementById('available-citizens');
+    const availableCreditsEl = document.getElementById('available-credits');
+    const totalCostEl = document.getElementById('total-build-cost');
+    const totalRefundEl = document.getElementById('total-refund-value');
 
-        const availableCitizens = parseInt(availableCitizensEl.dataset.amount);
-        const availableCredits = parseInt(availableCreditsEl.dataset.amount);
-        const charismaDiscount = parseFloat(trainForm.dataset.charismaDiscount);
-        const refundRate = 0.75;
+    const availableCitizens = parseInt(availableCitizensEl.dataset.amount);
+    const availableCredits = parseInt(availableCreditsEl.dataset.amount);
+    const charismaDiscount = parseFloat(trainForm.dataset.charismaDiscount);
+    const refundRate = 0.75;
 
-        // --- Tab Switching ---
-        trainTabBtn.addEventListener('click', () => {
-            trainTab.classList.remove('hidden');
-            disbandTabContent.classList.add('hidden');
-            trainTabBtn.classList.add('border-cyan-400', 'text-white');
-            trainTabBtn.classList.remove('border-transparent', 'text-gray-300');
-            disbandTabBtn.classList.add('border-transparent', 'text-gray-300');
-            disbandTabBtn.classList.remove('border-cyan-400', 'text-white');
+    // --- Tab Switching ---
+    trainTabBtn.addEventListener('click', () => {
+        trainTab.classList.remove('hidden');
+        disbandTabContent.classList.add('hidden');
+        trainTabBtn.classList.add('border-cyan-400', 'text-white');
+        trainTabBtn.classList.remove('border-transparent', 'text-gray-300');
+        disbandTabBtn.classList.add('border-transparent', 'text-gray-300');
+        disbandTabBtn.classList.remove('border-cyan-400', 'text-white');
+    });
+
+    disbandTabBtn.addEventListener('click', () => {
+        disbandTabContent.classList.remove('hidden');
+        trainTab.classList.add('hidden');
+        disbandTabBtn.classList.add('border-cyan-400', 'text-white');
+        disbandTabBtn.classList.remove('border-transparent', 'text-gray-300');
+        trainTabBtn.classList.add('border-transparent', 'text-gray-300');
+        trainTabBtn.classList.remove('border-cyan-400', 'text-white');
+    });
+
+    // --- Training Calculations ---
+    const trainInputs = trainForm.querySelectorAll('.unit-input-train');
+    function updateTrainingCost() {
+        let totalCost = 0;
+        let totalCitizens = 0;
+        trainInputs.forEach(input => {
+            const amount = parseInt(input.value) || 0;
+            totalCitizens += amount;
+            if (amount > 0) {
+                const baseCost = parseInt(input.dataset.cost);
+                totalCost += amount * Math.floor(baseCost * charismaDiscount);
+            }
         });
-
-        disbandTabBtn.addEventListener('click', () => {
-            disbandTabContent.classList.remove('hidden');
-            trainTab.classList.add('hidden');
-            disbandTabBtn.classList.add('border-cyan-400', 'text-white');
-            disbandTabBtn.classList.remove('border-transparent', 'text-gray-300');
-            trainTabBtn.classList.add('border-transparent', 'text-gray-300');
-            trainTabBtn.classList.remove('border-cyan-400', 'text-white');
-        });
-
-        // --- Training Calculations ---
-        const trainInputs = trainForm.querySelectorAll('.unit-input-train');
-        function updateTrainingCost() {
-            let totalCost = 0;
-            let totalCitizens = 0;
-            trainInputs.forEach(input => {
-                const amount = parseInt(input.value) || 0;
-                totalCitizens += amount;
-                if (amount > 0) {
-                    const baseCost = parseInt(input.dataset.cost);
-                    totalCost += amount * Math.floor(baseCost * charismaDiscount);
-                }
-            });
-            totalCostEl.textContent = totalCost.toLocaleString();
-            totalCostEl.classList.toggle('text-red-500', totalCost > availableCredits);
-            availableCitizensEl.classList.toggle('text-red-500', totalCitizens > availableCitizens);
-        }
-        trainInputs.forEach(input => input.addEventListener('input', updateTrainingCost));
-
-        trainForm.querySelectorAll('.train-max-btn').forEach(btn => {
-            btn.addEventListener('click', e => {
-                const clickedInput = e.currentTarget.previousElementSibling;
-
-                // 1. Calculate resources used by OTHER inputs
-                let otherInputsCost = 0;
-                let otherInputsCitizens = 0;
-                trainInputs.forEach(input => {
-                    if (input !== clickedInput) {
-                        const amount = parseInt(input.value) || 0;
-                        otherInputsCitizens += amount;
-                        if (amount > 0) {
-                            const baseCost = parseInt(input.dataset.cost);
-                            otherInputsCost += amount * Math.floor(baseCost * charismaDiscount);
-                        }
-                    }
-                });
-
-                // 2. Calculate remaining resources
-                const remainingCredits = availableCredits - otherInputsCost;
-                const remainingCitizens = availableCitizens - otherInputsCitizens;
-
-                // 3. Calculate max for the clicked input
-                const baseCost = parseInt(clickedInput.dataset.cost);
-                const discountedCost = Math.floor(baseCost * charismaDiscount);
-
-                const maxByCredits = discountedCost > 0 ? Math.floor(remainingCredits / discountedCost) : Infinity;
-                const maxForThisUnit = Math.max(0, Math.min(maxByCredits, remainingCitizens));
-                
-                // 4. Set the value
-                clickedInput.value = maxForThisUnit;
-
-                // 5. Update total display
-                updateTrainingCost();
-            });
-        });
-
-        // --- Disband Calculations ---
-        const disbandInputs = disbandForm.querySelectorAll('.unit-input-disband');
-        function updateDisbandRefund() {
-            let totalRefund = 0;
-            disbandInputs.forEach(input => {
-                const amount = parseInt(input.value) || 0;
-                if (amount > 0) {
-                    const baseCost = parseInt(input.dataset.cost);
-                    totalRefund += amount * Math.floor(baseCost * refundRate);
-                }
-            });
-            totalRefundEl.textContent = totalRefund.toLocaleString();
-        }
-        disbandInputs.forEach(input => input.addEventListener('input', updateDisbandRefund));
-
-        disbandForm.querySelectorAll('.disband-max-btn').forEach(btn => {
-            btn.addEventListener('click', e => {
-                const input = e.currentTarget.previousElementSibling;
-                input.value = input.max;
-                updateDisbandRefund();
-            });
-        });
-
-        // Initial calculation on page load
-        updateTrainingCost();
-        updateDisbandRefund();
+        totalCostEl.textContent = totalCost.toLocaleString();
+        totalCostEl.classList.toggle('text-red-500', totalCost > availableCredits);
+        availableCitizensEl.classList.toggle('text-red-500', totalCitizens > availableCitizens);
     }
+    trainInputs.forEach(input => input.addEventListener('input', updateTrainingCost));
+
+    trainForm.querySelectorAll('.train-max-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
+            const clickedInput = e.currentTarget.previousElementSibling;
+
+            // 1. Calculate resources used by OTHER inputs
+            let otherInputsCost = 0;
+            let otherInputsCitizens = 0;
+            trainInputs.forEach(input => {
+                if (input !== clickedInput) {
+                    const amount = parseInt(input.value) || 0;
+                    otherInputsCitizens += amount;
+                    if (amount > 0) {
+                        const baseCost = parseInt(input.dataset.cost);
+                        otherInputsCost += amount * Math.floor(baseCost * charismaDiscount);
+                    }
+                }
+            });
+
+            // 2. Calculate remaining resources
+            const remainingCredits = availableCredits - otherInputsCost;
+            const remainingCitizens = availableCitizens - otherInputsCitizens;
+
+            // 3. Calculate max for the clicked input
+            const baseCost = parseInt(clickedInput.dataset.cost);
+            const discountedCost = Math.floor(baseCost * charismaDiscount);
+
+            const maxByCredits = discountedCost > 0 ? Math.floor(remainingCredits / discountedCost) : Infinity;
+            const maxForThisUnit = Math.max(0, Math.min(maxByCredits, remainingCitizens));
+
+            // 4. Set the value
+            clickedInput.value = maxForThisUnit;
+
+            // 5. Update total display
+            updateTrainingCost();
+        });
+    });
+
+
+    // --- Disband Calculations ---
+    const disbandInputs = disbandForm.querySelectorAll('.unit-input-disband');
+    function updateDisbandRefund() {
+        let totalRefund = 0;
+        disbandInputs.forEach(input => {
+            const amount = parseInt(input.value) || 0;
+            if (amount > 0) {
+                const baseCost = parseInt(input.dataset.cost);
+                totalRefund += amount * Math.floor(baseCost * refundRate);
+            }
+        });
+        totalRefundEl.textContent = totalRefund.toLocaleString();
+    }
+    disbandInputs.forEach(input => input.addEventListener('input', updateDisbandRefund));
+
+    disbandForm.querySelectorAll('.disband-max-btn').forEach(btn => {
+        btn.addEventListener('click', e => {
+            const input = e.currentTarget.previousElementSibling;
+            input.value = input.max;
+            updateDisbandRefund();
+        });
+    });
+
+    // Initial calculation on page load
+    updateTrainingCost();
+    updateDisbandRefund();
+}
 });
