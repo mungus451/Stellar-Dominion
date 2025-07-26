@@ -32,6 +32,7 @@ $main_nav_links = [
 $sub_nav_links = [
     'HOME' => [
         'Dashboard' => 'dashboard.php',
+        'Bank' => 'bank.php',
         'Levels' => 'levels.php',
         'Profile' => 'profile.php',
         'Settings' => 'settings.php'
@@ -67,16 +68,11 @@ if (in_array($active_page, ['battle.php', 'attack.php', 'war_history.php'])) {
 // The pages 'dashboard.php', 'levels.php', 'profile.php', and 'settings.php' will correctly default to HOME.
 
 ?>
-<!-- The HTML output begins here. -->
-
-<!-- Page Header -->
 <header class="text-center mb-4">
     <h1 class="text-5xl font-title text-cyan-400" style="text-shadow: 0 0 8px rgba(6, 182, 212, 0.7);">STELLAR DOMINION</h1>
 </header>
 
-<!-- Navigation Container -->
 <div class="main-bg border border-gray-700 rounded-lg shadow-2xl p-1">
-    <!-- Main Navigation -->
     <nav class="flex justify-center space-x-4 md:space-x-8 bg-gray-900 p-3 rounded-t-md">
         <?php
         // Loop through the main navigation links and generate the HTML for each one.
@@ -93,7 +89,6 @@ if (in_array($active_page, ['battle.php', 'attack.php', 'war_history.php'])) {
         <?php endforeach; ?>
     </nav>
 
-    <!-- Sub-Navigation -->
     <?php
     // Check if a sub-navigation menu exists for the current active category and is not empty.
     if (isset($sub_nav_links[$active_main_category]) && !empty($sub_nav_links[$active_main_category])):
