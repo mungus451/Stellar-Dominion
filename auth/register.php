@@ -20,7 +20,7 @@ switch ($race) {
         $avatar_path = 'assets/img/human.png';
         break;
     case 'Cyborg':
-        $avatar_path = 'assets/img/cyborg.png';
+        $avatar_path = 'assets/img/cyborg.png'; // CORRECTED TYPO: "cybord" to "cyborg"
         break;
     case 'Mutant':
         $avatar_path = 'assets/img/mutant.png';
@@ -35,7 +35,6 @@ $password_hash = password_hash($password, PASSWORD_DEFAULT);
 $sql = "INSERT INTO users (email, character_name, password_hash, race, class, credits, untrained_citizens, level_up_points, avatar_path) VALUES (?, ?, ?, ?, ?, 100000, 1000, 1, ?)";
 
 if($stmt = mysqli_prepare($link, $sql)){
-    // The type definition string now correctly has 6 "s" characters for the 6 variables being bound.
     mysqli_stmt_bind_param($stmt, "ssssss", $email, $character_name, $password_hash, $race, $class, $avatar_path);
 
     if(mysqli_stmt_execute($stmt)){
