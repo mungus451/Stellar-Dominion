@@ -19,11 +19,11 @@
 // Defines the links that appear in the main, top-level navigation bar.
 // 'Link Text' => 'file_name.php'
 $main_nav_links = [
-    'HOME' => 'dashboard.php',
-    'BATTLE' => 'battle.php',
-    'STRUCTURES' => 'structures.php',
-    'COMMUNITY' => 'community.php',
-    'SIGN OUT' => 'auth/logout.php'
+    'HOME' => '/dashboard.php',
+    'BATTLE' => '/battle.php',
+    'STRUCTURES' => '/structures.php',
+    'COMMUNITY' => '/community.php',
+    'SIGN OUT' => '/auth/logout.php'
 ];
 
 // Defines the links that appear in the secondary, sub-navigation bar.
@@ -31,23 +31,23 @@ $main_nav_links = [
 // This allows for context-sensitive sub-menus.
 $sub_nav_links = [
     'HOME' => [
-        'Dashboard' => 'dashboard.php',
-        'Bank' => 'bank.php',
-        'Levels' => 'levels.php',
-        'Profile' => 'profile.php',
-        'Settings' => 'settings.php'
+        'Dashboard' => '/dashboard.php',
+        'Bank' => '/bank.php',
+        'Levels' => '/levels.php',
+        'Profile' => '/profile.php',
+        'Settings' => '/settings.php'
     ],
     'BATTLE' => [
-        'Attack' => 'attack.php',
-        'Training' => 'battle.php',
-        'War History' => 'war_history.php'
+        'Attack' => '/attack.php',
+        'Training' => '/battle.php',
+        'War History' => '/war_history.php'
     ],
     'STRUCTURES' => [
         // This category currently has no sub-navigation.
     ],
     'COMMUNITY' => [
-        'News' => 'community.php',
-        'Leaderboards' => 'stats.php',
+        'News' => '/community.php',
+        'Leaderboards' => '/stats.php',
         'Discord' => 'https://discord.com/channels/1397295425777696768/1397295426415235214'
     ]
 ];
@@ -58,6 +58,7 @@ $sub_nav_links = [
 // Determine the currently active main category based on the '$active_page' variable.
 // This is used to highlight the correct main navigation link (e.g., 'BATTLE').
 $active_main_category = 'HOME'; // Default to 'HOME'
+$active_page_path = '/' . $active_page;
 
 if (in_array($active_page, ['battle.php', 'attack.php', 'war_history.php'])) {
     $active_main_category = 'BATTLE';
@@ -105,7 +106,7 @@ if (in_array($active_page, ['battle.php', 'attack.php', 'war_history.php'])) {
                 <?php if ($is_external) echo 'target="_blank" rel="noopener noreferrer"'; ?>
                 class="<?php
                     // Conditionally add styling if the sub-nav link matches the exact active page.
-                    echo ($link == $active_page) ? 'font-semibold text-white' : 'text-gray-400 hover:text-white';
+                    echo ($link == $active_page_path) ? 'font-semibold text-white' : 'text-gray-400 hover:text-white';
                 ?> px-3">
                 <?php echo $title; ?>
              </a>
