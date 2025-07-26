@@ -49,6 +49,11 @@ $advice_repository = [
         "Vacation mode protects your empire from attacks while you are away. Use it wisely.",
         "Account settings are critical. Double-check your entries before saving."
     ],
+    'bank.php' => [
+        "Store your credits in the bank to keep them safe from plunder. Banked credits cannot be stolen.",
+        "You have a limited number of deposits each day. Plan your finances carefully.",
+        "Remember to withdraw credits before you can spend them on units or structures."
+    ],
     'community.php' => [ // Added advice for the new page
         "Join our Discord to stay up-to-date with the latest game news and announcements.",
         "Community is key. Share your strategies and learn from fellow commanders.",
