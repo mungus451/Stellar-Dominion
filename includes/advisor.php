@@ -59,6 +59,11 @@ $advice_repository = [
         "Community is key. Share your strategies and learn from fellow commanders.",
         "Your feedback during this development phase is invaluable to us."
     ],
+    'inspiration.php' => [ // <-- ADDED ADVICE
+        "Greatness is built upon the foundations laid by others. It's always good to acknowledge our roots.",
+        "Exploring open-source projects is a great way to learn and contribute to the community.",
+        "Every great game has a story. This one is no different."
+    ],
 ];
 
 // Get the appropriate advice for the current page, or provide a default message.
