@@ -20,7 +20,7 @@ switch ($race) {
         $avatar_path = 'assets/img/human.png';
         break;
     case 'Cyborg':
-        $avatar_path = 'assets/img/cybord.png';
+        $avatar_path = 'assets/img/cyborg.png';
         break;
     case 'Mutant':
         $avatar_path = 'assets/img/mutant.png';
