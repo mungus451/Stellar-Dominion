@@ -9,9 +9,6 @@
  * To use this script, run it once from your server's command line or by
  * navigating to it in a web browser.
  *
- * Example (Command Line):
- * /usr/bin/php /path/to/your/project/lib/retroactive_avatars.php
- *
  * It is recommended to delete this file after you have successfully run it.
  */
 
@@ -22,7 +19,8 @@ error_reporting(E_ALL);
 
 echo "<h1>Starting retroactive avatar assignment...</h1>";
 
-require_once __DIR__ . '/db_config.php';
+// Corrected path: Assumes this script is in the root and db_config.php is in /lib
+require_once __DIR__ . '/lib/db_config.php';
 
 // Select users who are missing an avatar path
 $sql_select = "SELECT id, character_name, race FROM users WHERE avatar_path IS NULL OR avatar_path = ''";
@@ -41,7 +39,7 @@ if ($result && mysqli_num_rows($result) > 0) {
                 $avatar_path = 'assets/img/human.png';
                 break;
             case 'Cyborg':
-                $avatar_path = 'assets/img/cybord.png';
+                $avatar_path = 'assets/img/cyborg.png'; 
                 break;
             case 'Mutant':
                 $avatar_path = 'assets/img/mutant.png';
