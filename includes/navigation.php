@@ -22,7 +22,7 @@ $main_nav_links = [
     'HOME' => 'dashboard.php',
     'BATTLE' => 'battle.php',
     'STRUCTURES' => 'structures.php',
-    'COMMUNITY' => 'community.php', // Updated link
+    'COMMUNITY' => 'community.php',
     'SIGN OUT' => 'auth/logout.php'
 ];
 
@@ -46,7 +46,9 @@ $sub_nav_links = [
         // This category currently has no sub-navigation.
     ],
     'COMMUNITY' => [
-        // This category currently has no sub-navigation.
+        'News' => 'community.php',
+        'Leaderboards' => 'stats.php',
+        'Discord' => 'https://discord.com/channels/1397295425777696768/1397295426415235214'
     ]
 ];
 
@@ -61,7 +63,7 @@ if (in_array($active_page, ['battle.php', 'attack.php', 'war_history.php'])) {
     $active_main_category = 'BATTLE';
 } elseif (in_array($active_page, ['structures.php'])) {
     $active_main_category = 'STRUCTURES';
-} elseif (in_array($active_page, ['community.php'])) { // Added community page
+} elseif (in_array($active_page, ['community.php', 'stats.php'])) { // Added stats.php
     $active_main_category = 'COMMUNITY';
 }
 // Note: 'HOME' is the default, so we don't need a separate check for it.
@@ -97,8 +99,10 @@ if (in_array($active_page, ['battle.php', 'attack.php', 'war_history.php'])) {
         <?php
         // Loop through the sub-navigation links for the active category.
         foreach ($sub_nav_links[$active_main_category] as $title => $link):
+            $is_external = filter_var($link, FILTER_VALIDATE_URL);
         ?>
              <a href="<?php echo $link; ?>"
+                <?php if ($is_external) echo 'target="_blank" rel="noopener noreferrer"'; ?>
                 class="<?php
                     // Conditionally add styling if the sub-nav link matches the exact active page.
                     echo ($link == $active_page) ? 'font-semibold text-white' : 'text-gray-400 hover:text-white';
