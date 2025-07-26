@@ -99,8 +99,8 @@ while ($target = mysqli_fetch_assoc($targets_result)) {
 
     $win_loss_ratio = ($losses > 0) ? ($wins / $losses) : $wins;
 
-    // 2. Total Units (Population)
-    $total_units = $target['soldiers'] + $target['guards'] + $target['sentries'] + $target['spies'] + $target['workers'];
+    // 2. Army Size
+    $army_size = $target['soldiers'] + $target['guards'] + $target['sentries'] + $target['spies'];
 
     // 3. Income Per Turn
     $worker_income = $target['workers'] * 50;
@@ -109,15 +109,17 @@ while ($target = mysqli_fetch_assoc($targets_result)) {
     $income_per_turn = floor($total_base_income * $wealth_bonus);
 
     // 4. Ranking Score Formula
+    // We now use army_size instead of total_units (which included workers) for this component of the score.
+    // Workers are still accounted for separately.
     $rank_score = ($target['experience'] * 0.1) +
-                  ($total_units * 2) +
+                  ($army_size * 2) + // Using army size now
                   ($win_loss_ratio * 1000) +
                   ($target['workers'] * 5) +
                   ($income_per_turn * 0.05) +
                   ($target['fortification_level'] * 500);
 
     $target['rank_score'] = $rank_score;
-    $target['population'] = $total_units; // Store population for display
+    $target['army_size'] = $army_size; // Store army_size for display
     $ranked_targets[] = $target;
 }
 
@@ -212,7 +214,7 @@ $active_page = 'attack.php';
                                         <th class="p-2">Lvl Rank</th>
                                         <th class="p-2">Username</th>
                                         <th class="p-2">Gold</th>
-                                        <th class="p-2">Population</th>
+                                        <th class="p-2">Army Size</th>
                                         <th class="p-2">Level</th>
                                         <th class="p-2 text-right">Action</th>
                                     </tr>
@@ -240,42 +242,3 @@ $active_page = 'attack.php';
                                         <td class="p-2">
                                             <div class="flex items-center">
                                                 <div class="relative mr-3">
-                                                    <img src="<?php echo htmlspecialchars($target['avatar_path'] ? $target['avatar_path'] : 'https://via.placeholder.com/40'); ?>" alt="Avatar" class="w-10 h-10">
-                                                    <?php
-                                                        $now_ts = time();
-                                                        $last_seen_ts = strtotime($target['last_updated']);
-                                                        $is_online = ($now_ts - $last_seen_ts) < 900; // 15 minute online threshold
-                                                    ?>
-                                                    <span class="absolute bottom-0 right-0 block h-3 w-3 rounded-full <?php echo $is_online ? 'bg-green-500' : 'bg-red-500'; ?> border-2 border-gray-800" title="<?php echo $is_online ? 'Online' : 'Offline'; ?>"></span>
-                                                </div>
-                                                <div>
-                                                    <p class="font-bold text-white"><?php echo htmlspecialchars($target['character_name']); ?></p>
-                                                    <p class="text-xs text-gray-500"><?php echo htmlspecialchars(strtoupper($target['race'] . ' ' . $target['class'])); ?></p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td class="p-2"><?php echo number_format($target_current_credits); ?></td>
-                                        <td class="p-2"><?php echo number_format($target['population']); ?></td>
-                                        <td class="p-2"><?php echo $target['level']; ?></td>
-                                        <td class="p-2 text-right">
-                                             <?php if ($target['id'] != $user_id): ?>
-                                                <a href="view_profile.php?id=<?php echo $target['id']; ?>" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-1 px-3 rounded-md text-xs">
-                                                    Scout
-                                                </a>
-                                            <?php else: ?>
-                                                <span class="text-gray-500 text-xs italic">This is you</span>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
-                                    <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </main>
-            </div>
-        </div>
-    </div>
-    <script src="assets/js/main.js" defer></script>
-</body>
-</html>
