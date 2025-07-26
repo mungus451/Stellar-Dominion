@@ -45,7 +45,7 @@ $active_page = 'community.php';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Stellar Dominion - Community</title>
+    <title>Stellar Dominion - News</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
@@ -58,7 +58,6 @@ $active_page = 'community.php';
             <?php if ($is_logged_in): ?>
                 <?php include_once 'includes/navigation.php'; ?>
             <?php else: ?>
-                <!-- Header for Logged-Out Users -->
                 <header class="bg-dark-translucent backdrop-blur-md border-b border-cyan-400/20 rounded-lg p-4 mb-4">
                     <div class="flex justify-between items-center">
                         <a href="index.html" class="text-3xl font-bold tracking-wider font-title text-cyan-400">STELLAR DOMINION</a>
@@ -71,7 +70,6 @@ $active_page = 'community.php';
                             <i data-lucide="menu" class="text-white"></i>
                         </button>
                     </div>
-                    <!-- Mobile Menu -->
                     <div id="mobile-menu" class="hidden md:hidden bg-dark-translucent mt-4 rounded-lg">
                         <nav class="flex flex-col items-center space-y-4 px-6 py-4">
                             <a href="index.html#features" class="hover:text-cyan-300 transition-colors">Features</a>
@@ -84,7 +82,6 @@ $active_page = 'community.php';
 
             <div class="grid grid-cols-1 <?php if ($is_logged_in) echo 'lg:grid-cols-4'; ?> gap-4">
                 <?php if ($is_logged_in && $user_stats): ?>
-                <!-- Left Sidebar -->
                 <aside class="lg:col-span-1 space-y-4">
                     <?php include 'includes/advisor.php'; ?>
                     <div class="content-box rounded-lg p-4">
@@ -107,9 +104,29 @@ $active_page = 'community.php';
                 </aside>
                 <?php endif; ?>
 
-                <!-- Main Content -->
                 <main class="<?php echo $is_logged_in ? 'lg:col-span-3' : 'col-span-1'; ?> space-y-6">
-                    <!-- Join Discord -->
+                    <div class="content-box rounded-lg p-6">
+                        <h3 class="font-title text-2xl text-cyan-400 mb-4 border-b border-gray-600 pb-2">Development Newsfeed</h3>
+                        
+                        <div class="mb-8 pb-4 border-b border-gray-700">
+                            <h4 class="font-title text-xl text-yellow-400">Major Upgrade System Overhaul & New Structures!</h4>
+                            <p class="text-xs text-gray-500 mb-2">Posted: 2025-07-25</p>
+                            <p class="text-gray-300">We've completely refactored the empire structure system! All permanent empire upgrades have been moved to the Structures page and categorized for clarity. This new, flexible system allows us to add more diverse and interesting upgrade paths in the future. Check out the new Offense, Defense, Economy, and Population upgrade trees and start specializing your empire today!</p>
+                        </div>
+
+                        <div class="mb-8 pb-4 border-b border-gray-700">
+                            <h4 class="font-title text-xl text-yellow-400">Galactic Rankings and Enhanced Attack List</h4>
+                            <p class="text-xs text-gray-500 mb-2">Posted: 2025-07-24</p>
+                            <p class="text-gray-300">The attack page has been revamped to better reflect the state of the galaxy. We've introduced a new comprehensive ranking algorithm that considers experience, population, and military victories to score commanders. The target list now proudly displays player avatars, race, class, and online status, allowing for more strategic target selection.</p>
+                        </div>
+                        
+                        <div class="mb-6">
+                            <h4 class="font-title text-xl text-yellow-400">Player Avatars & Banking System Introduced!</h4>
+                            <p class="text-xs text-gray-500 mb-2">Posted: 2025-07-23</p>
+                            <p class="text-gray-300">Commanders can now express their identity! You can now upload a custom avatar on your Profile page. Default racial avatars have been assigned to all existing commanders. In addition, the Interstellar Bank is now open for business. Protect your hard-earned credits from plunder by depositing them daily. Be strategic—deposits are limited!</p>
+                        </div>
+                    </div>
+
                     <div class="content-box rounded-lg p-6 text-center">
                          <h3 class="font-title text-2xl text-cyan-400 mb-2">Join the Community</h3>
                          <p class="mb-4">Connect with other commanders, discuss strategies, and get the latest updates on our official Discord server.</p>
@@ -118,19 +135,6 @@ $active_page = 'community.php';
                              Join Discord
                          </a>
                     </div>
-                    
-                    <!-- Development Bulletin -->
-                    <div class="content-box rounded-lg p-6">
-                        <h3 class="font-title text-xl text-yellow-400 border-b border-gray-600 pb-2 mb-3 flex items-center">
-                            <i data-lucide="alert-triangle" class="mr-3"></i>
-                            Development Bulletin
-                        </h3>
-                        <div class="space-y-4 text-gray-300">
-                            <p><strong class="text-white">Notice:</strong> Stellar Dominion is currently in an active development phase. We are working hard to build new features, balance gameplay, and create the best possible experience.</p>
-                            <p>As part of this process, the game is subject to periodic <strong class="text-white">server resets</strong>. These resets are necessary to implement major updates and ensure a level playing field for all commanders. We will do our best to keep these resets to a minimum and provide as much advance notice as possible via Discord.</p>
-                            <p>Thank you for your understanding and for being a part of our foundational community!</p>
-                        </div>
-                    </div>
                 </main>
             </div>
         </div>
@@ -138,7 +142,6 @@ $active_page = 'community.php';
     <script src="assets/js/main.js" defer></script>
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // This script is for the mobile menu on the logged-out view
             const mobileMenuButton = document.getElementById('mobile-menu-button');
             const mobileMenu = document.getElementById('mobile-menu');
 
@@ -148,7 +151,6 @@ $active_page = 'community.php';
                 });
             }
             
-            // Initialize lucide icons on this page, including the mobile menu icon
             lucide.createIcons();
         });
     </script>
