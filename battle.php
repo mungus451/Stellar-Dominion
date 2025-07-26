@@ -114,10 +114,18 @@ $current_tab = isset($_GET['tab']) && $_GET['tab'] === 'disband' ? 'disband' : '
                     </div>
                     
                     <!-- Tabs -->
-                    <div class="border-b border-gray-700">
-                        <nav class="-mb-px flex space-x-4" aria-label="Tabs">
-                            <button id="train-tab-btn" class="tab-btn <?php echo $current_tab === 'train' ? 'border-cyan-400 text-white' : 'border-transparent text-gray-300 hover:text-cyan-300'; ?> py-2 px-3 font-medium text-sm">Train Units</button>
-                            <button id="disband-tab-btn" class="tab-btn <?php echo $current_tab === 'disband' ? 'border-cyan-400 text-white' : 'border-transparent text-gray-300 hover:text-cyan-300'; ?> py-2 px-3 font-medium text-sm">Disband Units</button>
+                    <div class="border-b border-gray-600">
+                        <nav class="flex space-x-2" aria-label="Tabs">
+                            <?php
+                                $train_btn_classes = ($current_tab === 'train')
+                                    ? 'bg-gray-700 text-white font-semibold'
+                                    : 'bg-gray-800 hover:bg-gray-700 text-gray-400';
+                                $disband_btn_classes = ($current_tab === 'disband')
+                                    ? 'bg-gray-700 text-white font-semibold'
+                                    : 'bg-gray-800 hover:bg-gray-700 text-gray-400';
+                            ?>
+                            <button id="train-tab-btn" class="tab-btn <?php echo $train_btn_classes; ?> py-3 px-6 rounded-t-lg text-base transition-colors">Train Units</button>
+                            <button id="disband-tab-btn" class="tab-btn <?php echo $disband_btn_classes; ?> py-3 px-6 rounded-t-lg text-base transition-colors">Disband Units</button>
                         </nav>
                     </div>
 
