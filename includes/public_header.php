@@ -46,11 +46,11 @@
     <header class="fixed top-0 left-0 right-0 z-50 bg-dark-translucent backdrop-blur-md border-b border-cyan-400/20">
         <div class="container mx-auto px-6 py-4">
             <div class="flex justify-between items-center">
-                <a href="index.html" class="text-3xl font-bold tracking-wider font-title text-cyan-400">STELLAR DOMINION</a>
+                <a href="/index.html" class="text-3xl font-bold tracking-wider font-title text-cyan-400">STELLAR DOMINION</a>
                 <nav class="hidden md:flex space-x-8 text-lg">
-                    <a href="gameplay.php" class="nav-link-public <?php if($active_page === 'gameplay.php') echo 'active'; ?>">Gameplay</a>
-                    <a href="community.php" class="nav-link-public <?php if($active_page === 'community.php') echo 'active'; ?>">Community</a>
-                    <a href="stats.php" class="nav-link-public <?php if($active_page === 'stats.php') echo 'active'; ?>">Leaderboards</a>
+                    <a href="/gameplay.php" class="nav-link-public <?php if($active_page === 'gameplay.php') echo 'active'; ?>">Gameplay</a>
+                    <a href="/community.php" class="nav-link-public <?php if($active_page === 'community.php') echo 'active'; ?>">Community</a>
+                    <a href="/stats.php" class="nav-link-public <?php if($active_page === 'stats.php') echo 'active'; ?>">Leaderboards</a>
                 </nav>
                 <button id="mobile-menu-button" class="md:hidden focus:outline-none">
                     <i data-lucide="menu" class="text-white"></i>
@@ -59,9 +59,9 @@
         </div>
         <div id="mobile-menu" class="hidden md:hidden bg-dark-translucent">
             <nav class="flex flex-col items-center space-y-4 px-6 py-4">
-                <a href="gameplay.php" class="hover:text-cyan-300 transition-colors">Gameplay</a>
-                <a href="community.php" class="hover:text-cyan-300 transition-colors">Community</a>
-                <a href="stats.php" class="hover:text-cyan-300 transition-colors">Leaderboards</a>
+                <a href="/gameplay.php" class="hover:text-cyan-300 transition-colors">Gameplay</a>
+                <a href="/community.php" class="hover:text-cyan-300 transition-colors">Community</a>
+                <a href="/stats.php" class="hover:text-cyan-300 transition-colors">Leaderboards</a>
             </nav>
         </div>
     </header>
