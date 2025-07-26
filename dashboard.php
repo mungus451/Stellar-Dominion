@@ -70,6 +70,45 @@ if($stmt = mysqli_prepare($link, $sql)){
     $character_data = mysqli_fetch_assoc($result);
     mysqli_stmt_close($stmt);
 }
+
+// --- NET WORTH RECALCULATION ---
+// Define base unit costs and refund rate for untrain value calculation
+$base_unit_costs = ['workers' => 100, 'soldiers' => 250, 'guards' => 250, 'sentries' => 500, 'spies' => 1000];
+$refund_rate = 0.75;
+
+// 1. Calculate the total untrain value of all units
+$total_unit_value = 0;
+foreach ($base_unit_costs as $unit => $cost) {
+    if (isset($character_data[$unit])) {
+        $total_unit_value += floor($character_data[$unit] * $cost * $refund_rate);
+    }
+}
+
+// 2. Calculate the total cost of all purchased upgrades
+$total_upgrade_cost = 0;
+foreach ($upgrades as $category_key => $category) {
+    $db_column = $category['db_column'];
+    $current_level = $character_data[$db_column];
+    for ($i = 1; $i <= $current_level; $i++) {
+        $total_upgrade_cost += $category['levels'][$i]['cost'] ?? 0;
+    }
+}
+
+// 3. Calculate the new net worth (excluding banked credits)
+$new_net_worth = $total_unit_value + $total_upgrade_cost + $character_data['credits'];
+
+// 4. Update the database and the character data array
+if ($new_net_worth != $character_data['net_worth']) {
+    $sql_update_networth = "UPDATE users SET net_worth = ? WHERE id = ?";
+    if($stmt_nw = mysqli_prepare($link, $sql_update_networth)) {
+        mysqli_stmt_bind_param($stmt_nw, "ii", $new_net_worth, $user_id);
+        mysqli_stmt_execute($stmt_nw);
+        mysqli_stmt_close($stmt_nw);
+        $character_data['net_worth'] = $new_net_worth; // Update the array for immediate display
+    }
+}
+// --- END: NET WORTH RECALCULATION ---
+
 mysqli_close($link);
 
 // --- CALCULATE CUMULATIVE BONUSES FROM UPGRADES ---
@@ -91,7 +130,7 @@ $constitution_bonus = 1 + ($character_data['constitution_points'] * 0.01);
 
 $offense_power = floor((($character_data['soldiers'] * 10) * $strength_bonus) * $offense_upgrade_multiplier);
 $defense_rating = floor((($character_data['guards'] * 10) * $constitution_bonus) * $defense_upgrade_multiplier);
-$fortification = ($character_data['sentries'] * 10); // Fortification from structures is now part of specific upgrades, can be added here if needed
+$fortification = ($character_data['sentries'] * 10);
 $infiltration = $character_data['spies'] * 10;
 
 $worker_income = $character_data['workers'] * 50;
