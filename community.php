@@ -9,6 +9,8 @@ $user_stats = null;
 $minutes_until_next_turn = 0;
 $seconds_remainder = 0;
 $now = new DateTime('now', new DateTimeZone('UTC'));
+$page_title = 'Community';
+$active_page = 'community.php';
 
 if ($is_logged_in) {
     require_once "lib/db_config.php";
@@ -36,9 +38,6 @@ if ($is_logged_in) {
         $seconds_remainder = $seconds_until_next_turn % 60;
     }
 }
-
-// --- PAGE IDENTIFICATION ---
-$active_page = 'community.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -58,29 +57,10 @@ $active_page = 'community.php';
             <?php if ($is_logged_in): ?>
                 <?php include_once 'includes/navigation.php'; ?>
             <?php else: ?>
-                <header class="bg-dark-translucent backdrop-blur-md border-b border-cyan-400/20 rounded-lg p-4 mb-4">
-                    <div class="flex justify-between items-center">
-                        <a href="index.html" class="text-3xl font-bold tracking-wider font-title text-cyan-400">STELLAR DOMINION</a>
-                        <nav class="hidden md:flex space-x-8 text-lg">
-                            <a href="index.html#features" class="hover:text-cyan-300 transition-colors">Features</a>
-                            <a href="index.html#gameplay" class="hover:text-cyan-300 transition-colors">Gameplay</a>
-                            <a href="community.php" class="hover:text-cyan-300 transition-colors">Community</a>
-                        </nav>
-                        <button id="mobile-menu-button" class="md:hidden focus:outline-none">
-                            <i data-lucide="menu" class="text-white"></i>
-                        </button>
-                    </div>
-                    <div id="mobile-menu" class="hidden md:hidden bg-dark-translucent mt-4 rounded-lg">
-                        <nav class="flex flex-col items-center space-y-4 px-6 py-4">
-                            <a href="index.html#features" class="hover:text-cyan-300 transition-colors">Features</a>
-                            <a href="index.html#gameplay" class="hover:text-cyan-300 transition-colors">Gameplay</a>
-                            <a href="community.php" class="hover:text-cyan-300 transition-colors">Community</a>
-                        </nav>
-                    </div>
-                </header>
+                <?php include_once 'includes/public_header.php'; ?>
             <?php endif; ?>
 
-            <div class="grid grid-cols-1 <?php if ($is_logged_in) echo 'lg:grid-cols-4'; ?> gap-4">
+            <div class="grid grid-cols-1 <?php if ($is_logged_in) echo 'lg:grid-cols-4'; ?> gap-4 <?php if ($is_logged_in) echo 'p-4'; else echo 'pt-20'; ?>">
                 <?php if ($is_logged_in && $user_stats): ?>
                 <aside class="lg:col-span-1 space-y-4">
                     <?php include 'includes/advisor.php'; ?>
@@ -137,22 +117,14 @@ $active_page = 'community.php';
                     </div>
                 </main>
             </div>
+            <?php if ($is_logged_in): ?>
+                </div> <?php endif; ?>
         </div>
     </div>
-    <script src="assets/js/main.js" defer></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const mobileMenuButton = document.getElementById('mobile-menu-button');
-            const mobileMenu = document.getElementById('mobile-menu');
-
-            if(mobileMenuButton) {
-                mobileMenuButton.addEventListener('click', () => {
-                    mobileMenu.classList.toggle('hidden');
-                });
-            }
-            
-            lucide.createIcons();
-        });
-    </script>
-</body>
+    
+    <?php if ($is_logged_in): ?>
+        <script src="assets/js/main.js" defer></script>
+    <?php else: ?>
+        <?php include_once 'includes/public_footer.php'; ?>
+    <?php endif; ?>
 </html>
