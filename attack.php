@@ -65,8 +65,16 @@ $user_stats_result = mysqli_stmt_get_result($stmt_user_stats);
 $user_stats = mysqli_fetch_assoc($user_stats_result);
 mysqli_stmt_close($stmt_user_stats);
 
+// --- Pre-fetch all battle log stats for efficiency ---
+$sql_battle_stats = "SELECT attacker_id, SUM(CASE WHEN outcome = 'victory' THEN 1 ELSE 0 END) as wins, SUM(CASE WHEN outcome = 'defeat' THEN 1 ELSE 0 END) as losses FROM battle_logs GROUP BY attacker_id";
+$result_battle_stats = mysqli_query($link, $sql_battle_stats);
+$battle_stats = [];
+while ($row = mysqli_fetch_assoc($result_battle_stats)) {
+    $battle_stats[$row['attacker_id']] = $row;
+}
+
+
 // Fetch all users to display as potential targets.
-// Fetching all necessary fields for rank calculation and new display requirements.
 $sql_targets = "SELECT id, character_name, race, class, avatar_path, credits, level, last_updated, workers, wealth_points, soldiers, guards, sentries, spies, experience, fortification_level FROM users";
 $stmt_targets = mysqli_prepare($link, $sql_targets);
 mysqli_stmt_execute($stmt_targets);
@@ -76,27 +84,9 @@ $ranked_targets = [];
 
 while ($target = mysqli_fetch_assoc($targets_result)) {
     // --- RANK CALCULATION ---
-    // 1. Win/Loss Ratio
-    $wins = 0;
-    $losses = 0;
-    $sql_wins = "SELECT COUNT(*) as count FROM battle_logs WHERE attacker_id = ? AND outcome = 'victory'";
-    $stmt_wins = mysqli_prepare($link, $sql_wins);
-    mysqli_stmt_bind_param($stmt_wins, "i", $target['id']);
-    mysqli_stmt_execute($stmt_wins);
-    $wins_result = mysqli_stmt_get_result($stmt_wins);
-    $wins_row = mysqli_fetch_assoc($wins_result);
-    $wins = $wins_row['count'];
-    mysqli_stmt_close($stmt_wins);
-
-    $sql_losses = "SELECT COUNT(*) as count FROM battle_logs WHERE attacker_id = ? AND outcome = 'defeat'";
-    $stmt_losses = mysqli_prepare($link, $sql_losses);
-    mysqli_stmt_bind_param($stmt_losses, "i", $target['id']);
-    mysqli_stmt_execute($stmt_losses);
-    $losses_result = mysqli_stmt_get_result($stmt_losses);
-    $losses_row = mysqli_fetch_assoc($losses_result);
-    $losses = $losses_row['count'];
-    mysqli_stmt_close($stmt_losses);
-
+    // 1. Win/Loss Ratio (fetched from our pre-queried array)
+    $wins = $battle_stats[$target['id']]['wins'] ?? 0;
+    $losses = $battle_stats[$target['id']]['losses'] ?? 0;
     $win_loss_ratio = ($losses > 0) ? ($wins / $losses) : $wins;
 
     // 2. Army Size
@@ -109,17 +99,15 @@ while ($target = mysqli_fetch_assoc($targets_result)) {
     $income_per_turn = floor($total_base_income * $wealth_bonus);
 
     // 4. Ranking Score Formula
-    // We now use army_size instead of total_units (which included workers) for this component of the score.
-    // Workers are still accounted for separately.
     $rank_score = ($target['experience'] * 0.1) +
-                  ($army_size * 2) + // Using army size now
+                  ($army_size * 2) +
                   ($win_loss_ratio * 1000) +
                   ($target['workers'] * 5) +
                   ($income_per_turn * 0.05) +
                   ($target['fortification_level'] * 500);
 
     $target['rank_score'] = $rank_score;
-    $target['army_size'] = $army_size; // Store army_size for display
+    $target['army_size'] = $army_size;
     $ranked_targets[] = $target;
 }
 
@@ -242,3 +230,42 @@ $active_page = 'attack.php';
                                         <td class="p-2">
                                             <div class="flex items-center">
                                                 <div class="relative mr-3">
+                                                    <img src="<?php echo htmlspecialchars($target['avatar_path'] ? $target['avatar_path'] : 'https://via.placeholder.com/40'); ?>" alt="Avatar" class="w-10 h-10">
+                                                    <?php
+                                                        $now_ts = time();
+                                                        $last_seen_ts = strtotime($target['last_updated']);
+                                                        $is_online = ($now_ts - $last_seen_ts) < 900; // 15 minute online threshold
+                                                    ?>
+                                                    <span class="absolute bottom-0 right-0 block h-3 w-3 rounded-full <?php echo $is_online ? 'bg-green-500' : 'bg-red-500'; ?> border-2 border-gray-800" title="<?php echo $is_online ? 'Online' : 'Offline'; ?>"></span>
+                                                </div>
+                                                <div>
+                                                    <p class="font-bold text-white"><?php echo htmlspecialchars($target['character_name']); ?></p>
+                                                    <p class="text-xs text-gray-500"><?php echo htmlspecialchars(strtoupper($target['race'] . ' ' . $target['class'])); ?></p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="p-2"><?php echo number_format($target_current_credits); ?></td>
+                                        <td class="p-2"><?php echo number_format($target['army_size']); ?></td>
+                                        <td class="p-2"><?php echo $target['level']; ?></td>
+                                        <td class="p-2 text-right">
+                                             <?php if ($target['id'] != $user_id): ?>
+                                                <a href="view_profile.php?id=<?php echo $target['id']; ?>" class="bg-cyan-600 hover:bg-cyan-700 text-white font-bold py-1 px-3 rounded-md text-xs">
+                                                    Scout
+                                                </a>
+                                            <?php else: ?>
+                                                <span class="text-gray-500 text-xs italic">This is you</span>
+                                            <?php endif; ?>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+    </div>
+    <script src="assets/js/main.js" defer></script>
+</body>
+</html>
