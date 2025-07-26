@@ -78,7 +78,7 @@ $current_tab = isset($_GET['tab']) && $_GET['tab'] === 'disband' ? 'disband' : '
                         <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-3">Stats</h3>
                         <ul class="space-y-2 text-sm">
                             <li class="flex justify-between"><span>Credits:</span> <span class="text-white font-semibold"><?php echo number_format($user_data['credits']); ?></span></li>
-                            <li class="flex justify-between"><span>Untrained Citizens:</span> <span class="text-white font-semibold"><?php echo number_format($user_data['untrained_citizens']); ?></span></li>
+                            <li class="flex justify-between"><span>Untrained Citizens:</span> <span id="available-citizens" data-amount="<?php echo $user_data['untrained_citizens']; ?>" class="text-white font-semibold"><?php echo number_format($user_data['untrained_citizens']); ?></span></li>
                             <li class="flex justify-between"><span>Level:</span> <span class="text-white font-semibold"><?php echo $user_data['level']; ?></span></li>
                             <li class="flex justify-between"><span>Attack Turns:</span> <span class="text-white font-semibold"><?php echo $user_data['attack_turns']; ?></span></li>
                             <li class="flex justify-between border-t border-gray-600 pt-2 mt-2">
@@ -103,29 +103,32 @@ $current_tab = isset($_GET['tab']) && $_GET['tab'] === 'disband' ? 'disband' : '
                         </div>
                     <?php endif; ?>
 
+                    <!-- Resource & Cost Summary -->
                     <div class="content-box rounded-lg p-4">
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                            <div><p class="text-xs uppercase">Citizens</p><p id="available-citizens" data-amount="<?php echo $user_data['untrained_citizens']; ?>" class="text-lg font-bold text-white"><?php echo number_format($user_data['untrained_citizens']); ?></p></div>
+                            <div><p class="text-xs uppercase">Citizens</p><p class="text-lg font-bold text-white"><?php echo number_format($user_data['untrained_citizens']); ?></p></div>
                             <div><p class="text-xs uppercase">Credits</p><p id="available-credits" data-amount="<?php echo $user_data['credits']; ?>" class="text-lg font-bold text-white"><?php echo number_format($user_data['credits']); ?></p></div>
                             <div><p class="text-xs uppercase">Total Cost</p><p id="total-build-cost" class="text-lg font-bold text-yellow-400">0</p></div>
                             <div><p class="text-xs uppercase">Total Refund</p><p id="total-refund-value" class="text-lg font-bold text-green-400">0</p></div>
                         </div>
                     </div>
                     
+                    <!-- Tabs -->
                     <div class="border-b border-gray-700">
                         <nav class="-mb-px flex space-x-4" aria-label="Tabs">
-                            <button id="train-tab-btn" class="tab-btn <?php echo $current_tab === 'train' ? 'border-cyan-400 text-white' : 'border-transparent text-gray-400 hover:text-gray-200'; ?> py-2 px-3 font-medium text-sm">Train Units</button>
-                            <button id="disband-tab-btn" class="tab-btn <?php echo $current_tab === 'disband' ? 'border-cyan-400 text-white' : 'border-transparent text-gray-400 hover:text-gray-200'; ?> py-2 px-3 font-medium text-sm">Disband Units</button>
+                            <button id="train-tab-btn" class="tab-btn <?php echo $current_tab === 'train' ? 'border-cyan-400 text-white' : 'border-transparent text-gray-300 hover:text-cyan-300'; ?> py-2 px-3 font-medium text-sm">Train Units</button>
+                            <button id="disband-tab-btn" class="tab-btn <?php echo $current_tab === 'disband' ? 'border-cyan-400 text-white' : 'border-transparent text-gray-300 hover:text-cyan-300'; ?> py-2 px-3 font-medium text-sm">Disband Units</button>
                         </nav>
                     </div>
 
+                    <!-- Training Form -->
                     <div id="train-tab-content" class="<?php if ($current_tab !== 'train') echo 'hidden'; ?>">
                         <form id="train-form" action="lib/train.php" method="POST" class="space-y-4" data-charisma-discount="<?php echo 1 - ($user_data['charisma_points'] * 0.01); ?>">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <?php foreach($unit_costs as $unit => $cost): ?>
                                 <div class="content-box rounded-lg p-3">
                                     <div class="flex items-center space-x-3">
-                                        <img src="https://via.placeholder.com/64/1f2937/06b6d4?text=?" alt="<?php echo $unit_names[$unit]; ?> Icon" class="w-12 h-12 rounded-md flex-shrink-0">
+                                        <img src="https://placehold.co/64x64/1f2937/06b6d4?text=?" alt="<?php echo $unit_names[$unit]; ?> Icon" class="w-12 h-12 rounded-md flex-shrink-0">
                                         <div class="flex-grow">
                                             <p class="font-bold text-white"><?php echo $unit_names[$unit]; ?></p>
                                             <p class="text-xs">Cost: <?php echo number_format($cost); ?> Credits</p>
@@ -145,13 +148,14 @@ $current_tab = isset($_GET['tab']) && $_GET['tab'] === 'disband' ? 'disband' : '
                         </form>
                     </div>
                     
+                    <!-- Untraining/Disband Form -->
                     <div id="disband-tab-content" class="<?php if ($current_tab !== 'disband') echo 'hidden'; ?>">
                         <form id="disband-form" action="lib/untrain.php" method="POST" class="space-y-4">
                              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <?php foreach($unit_costs as $unit => $cost): ?>
                                 <div class="content-box rounded-lg p-3">
                                     <div class="flex items-center space-x-3">
-                                        <img src="https://via.placeholder.com/64/1f2937/ef4444?text=?" alt="<?php echo $unit_names[$unit]; ?> Icon" class="w-12 h-12 rounded-md flex-shrink-0">
+                                        <img src="https://placehold.co/64x64/1f2937/ef4444?text=?" alt="<?php echo $unit_names[$unit]; ?> Icon" class="w-12 h-12 rounded-md flex-shrink-0">
                                         <div class="flex-grow">
                                             <p class="font-bold text-white"><?php echo $unit_names[$unit]; ?></p>
                                             <p class="text-xs">Refund: <?php echo number_format($cost * 0.75); ?> Credits</p>
