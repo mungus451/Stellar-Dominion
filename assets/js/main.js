@@ -123,23 +123,36 @@ document.addEventListener('DOMContentLoaded', () => {
         const charismaDiscount = parseFloat(trainForm.dataset.charismaDiscount);
         const refundRate = 0.75;
 
-        // Tab Switching
+        // --- Tab Switching ---
+        const activeClasses = ['bg-gray-700', 'text-white', 'font-semibold'];
+        const inactiveClasses = ['bg-gray-800', 'hover:bg-gray-700', 'text-gray-400'];
+
         trainTabBtn.addEventListener('click', () => {
+            // Show/hide content
             trainTab.classList.remove('hidden');
             disbandTabContent.classList.add('hidden');
-            trainTabBtn.classList.add('border-cyan-400', 'text-white');
-            trainTabBtn.classList.remove('border-transparent', 'text-gray-300');
-            disbandTabBtn.classList.add('border-transparent', 'text-gray-300');
-            disbandTabBtn.classList.remove('border-cyan-400', 'text-white');
+            
+            // Style active tab
+            trainTabBtn.classList.add(...activeClasses);
+            trainTabBtn.classList.remove(...inactiveClasses);
+            
+            // Style inactive tab
+            disbandTabBtn.classList.add(...inactiveClasses);
+            disbandTabBtn.classList.remove(...activeClasses);
         });
 
         disbandTabBtn.addEventListener('click', () => {
+            // Show/hide content
             disbandTabContent.classList.remove('hidden');
             trainTab.classList.add('hidden');
-            disbandTabBtn.classList.add('border-cyan-400', 'text-white');
-            disbandTabBtn.classList.remove('border-transparent', 'text-gray-300');
-            trainTabBtn.classList.add('border-transparent', 'text-gray-300');
-            trainTabBtn.classList.remove('border-cyan-400', 'text-white');
+            
+            // Style active tab
+            disbandTabBtn.classList.add(...activeClasses);
+            disbandTabBtn.classList.remove(...inactiveClasses);
+
+            // Style inactive tab
+            trainTabBtn.classList.add(...inactiveClasses);
+            trainTabBtn.classList.remove(...activeClasses);
         });
 
         // Training Calculations
