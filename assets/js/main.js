@@ -87,4 +87,28 @@ document.addEventListener('DOMContentLoaded', () => {
             }, 10000); // Rotate every 10 seconds
         }
     }
+
+    // --- Banking Form Helpers ---
+    const creditsOnHand = document.getElementById('credits-on-hand');
+    const creditsInBank = document.getElementById('credits-in-bank');
+    const depositInput = document.getElementById('deposit-amount');
+    const withdrawInput = document.getElementById('withdraw-amount');
+    const bankPercentBtns = document.querySelectorAll('.bank-percent-btn');
+
+    if (bankPercentBtns.length > 0) {
+        bankPercentBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                const action = btn.dataset.action;
+                const percent = parseFloat(btn.dataset.percent);
+
+                if (action === 'deposit' && creditsOnHand && depositInput) {
+                    const amount = Math.floor(parseInt(creditsOnHand.dataset.amount) * percent);
+                    depositInput.value = amount;
+                } else if (action === 'withdraw' && creditsInBank && withdrawInput) {
+                    const amount = Math.floor(parseInt(creditsInBank.dataset.amount) * percent);
+                    withdrawInput.value = amount;
+                }
+            });
+        });
+    }
 });
