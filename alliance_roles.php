@@ -89,6 +89,7 @@ mysqli_close($link);
                                         <label class="flex items-center"><input type="checkbox" name="permissions[can_approve_membership]" value="1" <?php echo $role['can_approve_membership'] ? 'checked' : ''; ?> class="mr-2"> Approve Members</label>
                                         <label class="flex items-center"><input type="checkbox" name="permissions[can_kick_members]" value="1" <?php echo $role['can_kick_members'] ? 'checked' : ''; ?> class="mr-2"> Kick Members</label>
                                         <label class="flex items-center"><input type="checkbox" name="permissions[can_manage_roles]" value="1" <?php echo $role['can_manage_roles'] ? 'checked' : ''; ?> class="mr-2"> Manage Roles</label>
+                                        <label class="flex items-center"><input type="checkbox" name="permissions[can_moderate_forum]" value="1" <?php echo $role['can_moderate_forum'] ? 'checked' : ''; ?> class="mr-2"> Moderate Forum</label>
                                     </div>
                                 </div>
                             </div>
