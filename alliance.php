@@ -114,15 +114,16 @@ mysqli_close($link);
             <?php endif; ?>
 
             <?php if ($alliance): // USER IS IN AN ALLIANCE - THIS ENTIRE BLOCK WAS MISSING ?>
-                <div class="content-box rounded-lg p-6">
-                    <div class="flex flex-col md:flex-row md:items-center md:justify-between">
-                        <div class="flex items-center space-x-4">
-                            <img src="<?php echo htmlspecialchars($alliance['avatar_path'] ?? 'assets/img/default_alliance.png'); ?>" alt="Alliance Avatar" class="w-24 h-24 rounded-lg border-2 border-cyan-400 object-cover">
-                            <div>
-                                <h1 class="font-title text-4xl text-white">[<?php echo htmlspecialchars($alliance['tag']); ?>] <?php echo htmlspecialchars($alliance['name']); ?></h1>
-                                <p class="text-gray-400">Supreme Commander: <?php echo htmlspecialchars($alliance['leader_name']); ?></p>
+                                        <div class="content-box rounded-lg p-6">
+                            <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                                <div class="flex items-center space-x-4">
+                                    </div>
+                                <div class="text-center md:text-right mt-4 md:mt-0">
+                                     <p class="text-sm uppercase text-gray-400">Alliance Bank</p>
+                                     <p class="font-bold text-2xl text-yellow-300"><?php echo number_format($alliance['bank_credits']); ?> Credits</p>
+                                </div>
                             </div>
-                        </div>
+                            </div>
                         <div class="mt-4 md:mt-0 flex space-x-2">
                             <?php if ($user_permissions['can_edit_profile']): ?>
                                 <a href="edit_alliance.php" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Edit Profile</a>
