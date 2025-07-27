@@ -2,8 +2,8 @@
 /**
  * game_data.php
  *
- * Central repository for all static game data, such as upgrade trees.
- * This makes balancing and adding new content much easier.
+ * Central repository for all static game data, such as upgrade trees
+ * and alliance structure definitions.
  */
 
 $upgrades = [
@@ -54,5 +54,51 @@ $upgrades = [
             3 => ['name' => 'Habitation Pods III', 'cost' => 6000000, 'fort_req' => 4, 'bonuses' => ['citizens' => 2], 'description' => '+2 citizens per turn (Total: 5).'],
         ]
     ],
+];
+
+// --- NEW: Alliance Structure Definitions ---
+$alliance_structures_definitions = [
+    'command_nexus' => [
+        'name' => 'Command Nexus',
+        'description' => 'Increases the income of all alliance members.',
+        'cost' => 100000,
+        'bonus_text' => '+5% income per turn',
+        'bonuses' => json_encode(['income' => 5]) // Storing bonuses as JSON for flexibility
+    ],
+    'citadel_shield_array' => [
+        'name' => 'Citadel Shield Array',
+        'description' => 'Boosts the defensive power of all alliance members.',
+        'cost' => 250000,
+        'bonus_text' => '+10% defensive power',
+        'bonuses' => json_encode(['defense' => 10])
+    ],
+    'orbital_training_grounds' => [
+        'name' => 'Orbital Training Grounds',
+        'description' => 'Enhances the attack power of all alliance members.',
+        'cost' => 500000,
+        'bonus_text' => '+5% attack power',
+        'bonuses' => json_encode(['offense' => 5])
+    ],
+    'population_habitat' => [
+        'name' => 'Population Habitat',
+        'description' => 'Attracts more citizens to every member\'s empire each turn.',
+        'cost' => 300000,
+        'bonus_text' => '+5 citizens per turn',
+        'bonuses' => json_encode(['citizens' => 5])
+    ],
+    'galactic_research_hub' => [
+        'name' => 'Galactic Research Hub',
+        'description' => 'Improves overall resource generation for all members.',
+        'cost' => 750000,
+        'bonus_text' => '+10% resource generation',
+        'bonuses' => json_encode(['resources' => 10])
+    ],
+    'warlords_throne' => [
+        'name' => 'Warlord\'s Throne',
+        'description' => 'An ultimate symbol of power, boosting all other bonuses.',
+        'cost' => 2000000,
+        'bonus_text' => '+15% to all bonuses',
+        'bonuses' => json_encode(['income' => 15, 'defense' => 15, 'offense' => 15, 'citizens' => 15, 'resources' => 15])
+    ]
 ];
 ?>
