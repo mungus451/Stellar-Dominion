@@ -113,44 +113,49 @@ mysqli_close($link);
                 </div>
             <?php endif; ?>
 
-            <?php if ($alliance): // USER IS IN AN ALLIANCE - THIS ENTIRE BLOCK WAS MISSING ?>
-                                        <div class="content-box rounded-lg p-6">
-                            <div class="flex flex-col md:flex-row md:items-center md:justify-between">
-                                <div class="flex items-center space-x-4">
-                                    </div>
-                                <div class="text-center md:text-right mt-4 md:mt-0">
-                                     <p class="text-sm uppercase text-gray-400">Alliance Bank</p>
-                                     <p class="font-bold text-2xl text-yellow-300"><?php echo number_format($alliance['bank_credits']); ?> Credits</p>
-                                </div>
+            <?php if ($alliance): // START: USER IS IN AN ALLIANCE ?>
+                
+                <div class="content-box rounded-lg p-6">
+                    <div class="flex flex-col md:flex-row md:items-start md:justify-between">
+                        <div class="flex items-center space-x-4">
+                            <img src="<?php echo htmlspecialchars($alliance['avatar_path'] ?? 'assets/img/default_alliance.png'); ?>" alt="Alliance Avatar" class="w-20 h-20 rounded-lg border-2 border-gray-600 object-cover">
+                            <div>
+                                <h2 class="font-title text-3xl text-white">[<?php echo htmlspecialchars($alliance['tag']); ?>] <?php echo htmlspecialchars($alliance['name']); ?></h2>
+                                <p class="text-sm">Led by <?php echo htmlspecialchars($alliance['leader_name']); ?></p>
                             </div>
-                            </div>
-                        <div class="mt-4 md:mt-0 flex space-x-2">
-                            <?php if ($user_permissions['can_edit_profile']): ?>
-                                <a href="edit_alliance.php" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Edit Profile</a>
-                            <?php endif; ?>
-                            <form action="lib/alliance_actions.php" method="POST" onsubmit="return confirm('Are you sure you want to leave this alliance?');">
-                                <input type="hidden" name="action" value="leave">
-                                <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">Leave Alliance</button>
-                            </form>
+                        </div>
+                        <div class="text-center md:text-right mt-4 md:mt-0">
+                            <p class="text-sm uppercase text-gray-400">Alliance Bank</p>
+                            <p class="font-bold text-2xl text-yellow-300"><?php echo number_format($alliance['bank_credits']); ?> Credits</p>
                         </div>
                     </div>
-                    <div class="mt-4">
-                        <h3 class="font-title text-cyan-400">Alliance Charter</h3>
-                        <p class="mt-2 text-sm italic prose max-w-none"><?php echo nl2br(htmlspecialchars($alliance['description'])); ?></p>
+                     <div class="mt-4 pt-4 border-t border-gray-700 flex flex-wrap gap-2">
+                        <?php if ($user_permissions['can_edit_profile']): ?>
+                            <a href="edit_alliance.php" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg text-sm">Edit Profile</a>
+                        <?php endif; ?>
+                        <form action="lib/alliance_actions.php" method="POST" onsubmit="return confirm('Are you sure you want to leave this alliance?');">
+                            <input type="hidden" name="action" value="leave">
+                            <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg text-sm">Leave Alliance</button>
+                        </form>
                     </div>
+                </div>
+
+                <div class="content-box rounded-lg p-6">
+                    <h3 class="font-title text-cyan-400">Alliance Charter</h3>
+                    <div class="mt-2 text-sm italic prose max-w-none prose-invert text-gray-300"><?php echo nl2br(htmlspecialchars($alliance['description'])); ?></div>
                 </div>
 
                 <div class="border-b border-gray-600">
                     <nav class="flex space-x-4">
-                        <a href="?tab=roster" class="py-2 px-4 <?php echo $current_tab == 'roster' ? 'text-white border-b-2 border-cyan-400' : 'text-gray-400'; ?>">Member Roster</a>
+                        <a href="?tab=roster" class="py-2 px-4 <?php echo $current_tab == 'roster' ? 'text-white border-b-2 border-cyan-400' : 'text-gray-400 hover:text-white'; ?>">Member Roster</a>
                         <?php if ($user_permissions['can_approve_membership']): ?>
-                            <a href="?tab=applications" class="py-2 px-4 <?php echo $current_tab == 'applications' ? 'text-white border-b-2 border-cyan-400' : 'text-gray-400'; ?>">Applications <span class="bg-cyan-500 text-white text-xs rounded-full px-2"><?php echo count($applications); ?></span></a>
+                            <a href="?tab=applications" class="py-2 px-4 <?php echo $current_tab == 'applications' ? 'text-white border-b-2 border-cyan-400' : 'text-gray-400 hover:text-white'; ?>">Applications <span class="bg-cyan-500 text-white text-xs font-bold rounded-full px-2 py-1"><?php echo count($applications); ?></span></a>
                         <?php endif; ?>
                     </nav>
                 </div>
-
+                
                 <div id="roster-content" class="<?php if ($current_tab !== 'roster') echo 'hidden'; ?>">
-                    <div class="content-box rounded-lg p-4">
+                    <div class="content-box rounded-lg p-4 overflow-x-auto">
                         <table class="w-full text-sm text-left">
                             <thead class="bg-gray-800">
                                 <tr>
@@ -166,21 +171,22 @@ mysqli_close($link);
                                     <td class="p-2"><?php echo htmlspecialchars($member['role_name']); ?></td>
                                     <td class="p-2"><?php echo number_format($member['net_worth']); ?></td>
                                     <td class="p-2"><?php echo (time() - strtotime($member['last_updated']) < 900) ? '<span class="text-green-400">Online</span>' : '<span class="text-gray-500">Offline</span>'; ?></td>
-                                    <?php if ($user_permissions['can_kick_members'] && $member['id'] !== $user_id): ?>
+                                    <?php if ($user_permissions['can_kick_members'] && $member['id'] !== $user_id && $alliance['leader_id'] != $member['id']): ?>
                                         <td class="p-2 text-right">
                                             <form action="lib/alliance_actions.php" method="POST" class="inline-flex items-center space-x-2">
-                                                <input type="hidden" name="action" value="assign_role">
                                                 <input type="hidden" name="member_id" value="<?php echo $member['id']; ?>">
                                                 <select name="role_id" class="bg-gray-900 border border-gray-600 rounded-md p-1 text-xs">
                                                     <?php foreach($roles as $role): ?>
                                                         <option value="<?php echo $role['id']; ?>" <?php if($role['name'] == $member['role_name']) echo 'selected'; ?>><?php echo htmlspecialchars($role['name']); ?></option>
                                                     <?php endforeach; ?>
                                                 </select>
-                                                <button type="submit" class="text-green-400 hover:text-green-300 text-xs">Set</button>
+                                                <button type="submit" name="action" value="assign_role" class="text-green-400 hover:text-green-300 text-xs">Set</button>
                                                 <span class="text-gray-600">|</span>
                                                 <button type="submit" name="action" value="kick" class="text-red-400 hover:text-red-300 text-xs" onclick="return confirm('Are you sure you want to kick this member?');">Kick</button>
                                             </form>
                                         </td>
+                                    <?php elseif ($user_permissions['can_kick_members']): // Provide a non-actionable cell for spacing ?>
+                                        <td class="p-2"></td>
                                     <?php endif; ?>
                                 </tr>
                                 <?php endforeach; ?>
@@ -206,12 +212,12 @@ mysqli_close($link);
                                         <td class="p-2 text-right">
                                             <form action="lib/alliance_actions.php" method="POST" class="inline-block">
                                                 <input type="hidden" name="application_id" value="<?php echo $app['id']; ?>">
-                                                <button type="submit" name="action" value="approve_application" class="text-green-400 hover:text-green-300 text-xs">Approve</button>
+                                                <button type="submit" name="action" value="approve_application" class="text-green-400 hover:text-green-300 text-xs font-bold">Approve</button>
                                             </form>
-                                            |
+                                            <span class="text-gray-600 mx-1">|</span>
                                             <form action="lib/alliance_actions.php" method="POST" class="inline-block">
                                                 <input type="hidden" name="application_id" value="<?php echo $app['id']; ?>">
-                                                <button type="submit" name="action" value="deny_application" class="text-red-400 hover:text-red-300 text-xs">Deny</button>
+                                                <button type="submit" name="action" value="deny_application" class="text-red-400 hover:text-red-300 text-xs font-bold">Deny</button>
                                             </form>
                                         </td>
                                     </tr>
@@ -222,13 +228,13 @@ mysqli_close($link);
                     </div>
                 </div>
 
-            <?php else: // USER IS NOT IN AN ALLIANCE ?>
+            <?php else: // START: USER IS NOT IN AN ALLIANCE ?>
                 <div class="content-box rounded-lg p-6 text-center">
                     <h1 class="font-title text-3xl text-white">Forge Your Allegiance</h1>
                     <p class="mt-2">You are currently unaligned. Apply to an existing alliance or spend 1,000,000 Credits to forge your own.</p>
                     <a href="create_alliance.php" class="mt-4 inline-block bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-8 rounded-lg">Create Alliance</a>
                 </div>
-                <div class="content-box rounded-lg p-4">
+                <div class="content-box rounded-lg p-4 overflow-x-auto">
                     <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-3">Join an Alliance</h3>
                     <table class="w-full text-sm text-left">
                         <thead class="bg-gray-800"><tr><th class="p-2">Name</th><th class="p-2">Members</th><th class="p-2 text-right">Action</th></tr></thead>
@@ -255,7 +261,7 @@ mysqli_close($link);
                         </tbody>
                     </table>
                 </div>
-            <?php endif; ?>
+            <?php endif; // END: IF/ELSE FOR ALLIANCE MEMBERSHIP ?>
         </main>
     </div>
 </div>
