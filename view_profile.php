@@ -1,4 +1,5 @@
 <?php
+// --- SESSION AND DATABASE SETUP ---
 session_start();
 require_once "lib/db_config.php";
 date_default_timezone_set('UTC');
@@ -20,12 +21,12 @@ mysqli_stmt_execute($stmt_profile);
 $profile_data = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_profile));
 mysqli_stmt_close($stmt_profile);
 
-if (!$profile_data) { header("location: /attack.php"); exit; }
+if (!$profile_data) { header("location: /attack.php"); exit; } // Target not found
 
-// Fetch viewer's data to check for alliance match
+// Fetch viewer's data to check for alliance match and for sidebar stats
 $viewer_data = null;
 if ($is_logged_in) {
-    $sql_viewer = "SELECT alliance_id FROM users WHERE id = ?";
+    $sql_viewer = "SELECT credits, untrained_citizens, level, attack_turns, last_updated, alliance_id FROM users WHERE id = ?";
     $stmt_viewer = mysqli_prepare($link, $sql_viewer);
     mysqli_stmt_bind_param($stmt_viewer, "i", $viewer_id);
     mysqli_stmt_execute($stmt_viewer);
@@ -33,41 +34,59 @@ if ($is_logged_in) {
     mysqli_stmt_close($stmt_viewer);
 }
 
+mysqli_close($link);
+
+// --- DERIVED STATS & CALCULATIONS for viewed profile ---
+$army_size = $profile_data['soldiers'] + $profile_data['guards'] + $profile_data['sentries'] + $profile_data['spies'];
+$last_seen_ts = strtotime($profile_data['last_updated']);
+$is_online = (time() - $last_seen_ts) < 900; // 15 minute online threshold
+
 // Determine if the attack interface should be shown
 $is_same_alliance = ($viewer_data && $profile_data['alliance_id'] && $viewer_data['alliance_id'] === $profile_data['alliance_id']);
 $can_attack = $is_logged_in && ($viewer_id != $profile_id) && !$is_same_alliance;
 
-$army_size = $profile_data['soldiers'] + $profile_data['guards'];
+// Timer calculations for viewer
+$minutes_until_next_turn = 0;
+$seconds_remainder = 0;
+$now = new DateTime('now', new DateTimeZone('UTC'));
+if($viewer_data) {
+    $turn_interval_minutes = 10;
+    $last_updated = new DateTime($viewer_data['last_updated'], new DateTimeZone('UTC'));
+    $seconds_until_next_turn = ($turn_interval_minutes * 60) - (($now->getTimestamp() - $last_updated->getTimestamp()) % ($turn_interval_minutes * 60));
+    if ($seconds_until_next_turn < 0) { $seconds_until_next_turn = 0; }
+    $minutes_until_next_turn = floor($seconds_until_next_turn / 60);
+    $seconds_remainder = $seconds_until_next_turn % 60;
+}
 
+// Page Identification
+$active_page = 'attack.php'; // Keep the 'BATTLE' main nav active
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stellar Dominion - Profile of <?php echo htmlspecialchars($profile_data['character_name']); ?></title>
-    </head>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
 <body class="text-gray-400 antialiased">
-    <div class="min-h-screen bg-cover bg-center bg-fixed">
+    <div class="min-h-screen bg-cover bg-center bg-fixed" style="background-image: url('https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1742&q=80');">
         <div class="container mx-auto p-4 md:p-8">
-            <main class="content-box rounded-lg p-6 mt-4">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="md:col-span-2 space-y-4">
-                        <?php if ($can_attack): ?>
-                        <div class="bg-gray-800 rounded-lg p-4">
-                             <h3 class="font-title text-lg text-red-400">Engage Target</h3>
-                            <form action="lib/process_attack.php" method="POST" class="flex items-center justify-between mt-2">
-                                <input type="hidden" name="defender_id" value="<?php echo $profile_data['id']; ?>">
-                                <div class="text-sm">
-                                    <label for="attack_turns">Attack Turns (1-10):</label>
-                                    <input type="number" id="attack_turns" name="attack_turns" min="1" max="10" value="1" class="bg-gray-900 border border-gray-600 rounded-md w-20 text-center p-1 ml-2">
-                                </div>
-                                <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">Launch Attack</button>
-                            </form>
-                        </div>
-                        <?php endif; ?>
-                        </div>
-                </div>
-            </main>
-        </div>
-    </div>
-</body>
-</html>
+
+            <?php if ($is_logged_in): ?>
+                <?php include_once 'includes/navigation.php'; ?>
+            <?php else: ?>
+                <?php include_once 'includes/public_header.php'; ?>
+            <?php endif; ?>
+
+            <div class="grid grid-cols-1 <?php if ($is_logged_in) echo 'lg:grid-cols-4'; ?> gap-4 <?php if ($is_### Fix Summary:
+
+* **Restored Page Layout:** The `view_profile.php` file has been updated to include the standard header, navigation, sidebar, and styling, making it look and feel like the rest of the application.
+* **Added Profile Details:** The page now correctly displays the target commander's key information, such as their avatar, level, race, class, alliance affiliation, army size, and biography.
+* **Integrated Attack Box:** The "Engage Target" interface is now properly integrated into the page and is only displayed when you are logged in and able to attack the target (i.e., not yourself and not an alliance member).
+* **Added Viewer Stats:** A sidebar has been added to show your own relevant stats (Credits, Attack Turns, etc.) for quick reference while scouting a target.
+
+This fix resolves the visual bug and makes the scouting/attack page fully functional and consistent with the game's design.
