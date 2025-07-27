@@ -1,6 +1,6 @@
 <?php
 /**
- * fix_leader_roles.php (v2)
+ * fix_leader_roles.php (v2 - Corrected Version)
  *
  * This is a one-time maintenance script to assign the 'Supreme Commander' role
  * to all existing alliance leaders.
