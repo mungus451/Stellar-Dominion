@@ -70,18 +70,9 @@ if ($alliance_id) {
         mysqli_stmt_close($stmt_apps);
     }
 
-    // Fetch forum posts
-    $sql_forum = "SELECT p.id, p.post_content, p.post_time, p.is_pinned, u.character_name, u.avatar_path FROM alliance_forum_posts p JOIN users u ON p.user_id = u.id WHERE p.alliance_id = ? ORDER BY p.is_pinned DESC, p.post_time DESC LIMIT 50";
-    $stmt_forum = mysqli_prepare($link, $sql_forum);
-    mysqli_stmt_bind_param($stmt_forum, "i", $alliance_id);
-    mysqli_stmt_execute($stmt_forum);
-    $result_forum = mysqli_stmt_get_result($stmt_forum);
-    while($row = mysqli_fetch_assoc($result_forum)){ $forum_posts[] = $row; }
-    mysqli_stmt_close($stmt_forum);
-
 } else {
     // User is not in an alliance, fetch a list of all alliances
-    $sql_alliances = "SELECT a.id, a.name, a.tag, (SELECT COUNT(*) FROM users WHERE alliance_id = a.id) as member_count, (SELECT COUNT(*) FROM alliance_applications WHERE alliance_id = a.id AND user_id = ?) as has_applied FROM alliances a ORDER BY member_count DESC";
+    $sql_alliances = "SELECT a.id, a.name, a.tag, (SELECT COUNT(*) FROM users WHERE alliance_id = a.id) as member_count, (SELECT COUNT(*) FROM alliance_applications WHERE alliance_id = a.id AND user_id = ? AND status = 'pending') as has_applied FROM alliances a ORDER BY member_count DESC";
     $stmt_alliances = mysqli_prepare($link, $sql_alliances);
     mysqli_stmt_bind_param($stmt_alliances, "i", $user_id);
     mysqli_stmt_execute($stmt_alliances);
@@ -116,117 +107,7 @@ mysqli_close($link);
 
             <?php if ($alliance): // USER IS IN AN ALLIANCE ?>
                 <div class="content-box rounded-lg p-6">
-                    <div class="flex flex-col md:flex-row md:items-center md:justify-between">
-                        <div class="flex items-center space-x-4">
-                            <img src="<?php echo htmlspecialchars($alliance['avatar_path'] ?? 'assets/img/default_alliance.png'); ?>" alt="Alliance Avatar" class="w-24 h-24 rounded-lg border-2 border-cyan-400 object-cover">
-                            <div>
-                                <h1 class="font-title text-4xl text-white">[<?php echo htmlspecialchars($alliance['tag']); ?>] <?php echo htmlspecialchars($alliance['name']); ?></h1>
-                                <p class="text-gray-400">Supreme Commander: <?php echo htmlspecialchars($alliance['leader_name']); ?></p>
-                            </div>
-                        </div>
-                        <div class="mt-4 md:mt-0 flex space-x-2">
-                            <?php if ($user_permissions['can_edit_profile']): ?>
-                                <a href="edit_alliance.php" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg">Edit Profile</a>
-                            <?php endif; ?>
-                            <form action="lib/alliance_actions.php" method="POST" onsubmit="return confirm('Are you sure you want to leave this alliance?');">
-                                <input type="hidden" name="action" value="leave">
-                                <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg">Leave Alliance</button>
-                            </form>
-                        </div>
                     </div>
-                    <div class="mt-4">
-                        <h3 class="font-title text-cyan-400">Alliance Charter</h3>
-                        <p class="mt-2 text-sm italic prose max-w-none"><?php echo nl2br(htmlspecialchars($alliance['description'])); ?></p>
-                    </div>
-                </div>
-
-                <div class="border-b border-gray-600">
-                    <nav class="flex space-x-4">
-                        <a href="?tab=roster" class="py-2 px-4 <?php echo $current_tab == 'roster' ? 'text-white border-b-2 border-cyan-400' : 'text-gray-400'; ?>">Member Roster</a>
-                        <a href="?tab=forum" class="py-2 px-4 <?php echo $current_tab == 'forum' ? 'text-white border-b-2 border-cyan-400' : 'text-gray-400'; ?>">Alliance Forum</a>
-                        <?php if ($user_permissions['can_approve_membership']): ?>
-                            <a href="?tab=applications" class="py-2 px-4 <?php echo $current_tab == 'applications' ? 'text-white border-b-2 border-cyan-400' : 'text-gray-400'; ?>">Applications <span class="bg-cyan-500 text-white text-xs rounded-full px-2"><?php echo count($applications); ?></span></a>
-                        <?php endif; ?>
-                    </nav>
-                </div>
-
-                <div id="roster-content" class="<?php if ($current_tab !== 'roster') echo 'hidden'; ?>">
-                    <div class="content-box rounded-lg p-4">
-                        <table class="w-full text-sm text-left">
-                            <thead class="bg-gray-800">
-                                <tr>
-                                    <th class="p-2">Name</th><th class="p-2">Level</th><th class="p-2">Role</th><th class="p-2">Net Worth</th><th class="p-2">Status</th>
-                                    <?php if ($user_permissions['can_kick_members']): ?><th class="p-2 text-right">Manage</th><?php endif; ?>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($members as $member): ?>
-                                <tr class="border-t border-gray-700">
-                                    <td class="p-2 text-white font-bold"><?php echo htmlspecialchars($member['character_name']); ?></td>
-                                    <td class="p-2"><?php echo $member['level']; ?></td>
-                                    <td class="p-2"><?php echo htmlspecialchars($member['role_name']); ?></td>
-                                    <td class="p-2"><?php echo number_format($member['net_worth']); ?></td>
-                                    <td class="p-2"><?php echo (time() - strtotime($member['last_updated']) < 900) ? '<span class="text-green-400">Online</span>' : '<span class="text-gray-500">Offline</span>'; ?></td>
-                                    <?php if ($user_permissions['can_kick_members'] && $member['id'] !== $user_id): ?>
-                                        <td class="p-2 text-right">
-                                            <form action="lib/alliance_actions.php" method="POST" class="inline-flex items-center space-x-2">
-                                                <input type="hidden" name="action" value="assign_role">
-                                                <input type="hidden" name="member_id" value="<?php echo $member['id']; ?>">
-                                                <select name="role_id" class="bg-gray-900 border border-gray-600 rounded-md p-1 text-xs">
-                                                    <?php foreach($roles as $role): ?>
-                                                        <option value="<?php echo $role['id']; ?>" <?php if($role['name'] == $member['role_name']) echo 'selected'; ?>><?php echo htmlspecialchars($role['name']); ?></option>
-                                                    <?php endforeach; ?>
-                                                </select>
-                                                <button type="submit" class="text-green-400 hover:text-green-300 text-xs">Set</button>
-                                                <span class="text-gray-600">|</span>
-                                                <button type="submit" name="action" value="kick" class="text-red-400 hover:text-red-300 text-xs" onclick="return confirm('Are you sure you want to kick this member?');">Kick</button>
-                                            </form>
-                                        </td>
-                                    <?php endif; ?>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                
-                <div id="applications-content" class="<?php if ($current_tab !== 'applications') echo 'hidden'; ?>">
-                    <div class="content-box rounded-lg p-4">
-                        <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-3">Pending Applications</h3>
-                        <?php if (empty($applications)): ?>
-                            <p>There are no pending applications.</p>
-                        <?php else: ?>
-                            <table class="w-full text-sm text-left">
-                                <thead class="bg-gray-800"><tr><th class="p-2">Name</th><th class="p-2">Level</th><th class="p-2">Net Worth</th><th class="p-2 text-right">Action</th></tr></thead>
-                                <tbody>
-                                <?php foreach($applications as $app): ?>
-                                    <tr class="border-t border-gray-700">
-                                        <td class="p-2 text-white font-bold"><?php echo htmlspecialchars($app['character_name']); ?></td>
-                                        <td class="p-2"><?php echo $app['level']; ?></td>
-                                        <td class="p-2"><?php echo number_format($app['net_worth']); ?></td>
-                                        <td class="p-2 text-right">
-                                            <form action="lib/alliance_actions.php" method="POST" class="inline-block">
-                                                <input type="hidden" name="application_id" value="<?php echo $app['id']; ?>">
-                                                <button type="submit" name="action" value="approve_application" class="text-green-400 hover:text-green-300 text-xs">Approve</button>
-                                            </form>
-                                            |
-                                            <form action="lib/alliance_actions.php" method="POST" class="inline-block">
-                                                <input type="hidden" name="application_id" value="<?php echo $app['id']; ?>">
-                                                <button type="submit" name="action" value="deny_application" class="text-red-400 hover:text-red-300 text-xs">Deny</button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                                </tbody>
-                            </table>
-                        <?php endif; ?>
-                    </div>
-                </div>
-
-                <div id="forum-content" class="<?php if ($current_tab !== 'forum') echo 'hidden'; ?>">
-                    <div class="content-box rounded-lg p-4 space-y-4">
-                        </div>
-                </div>
 
             <?php else: // USER IS NOT IN AN ALLIANCE ?>
                 <div class="content-box rounded-lg p-6 text-center">
@@ -242,10 +123,12 @@ mysqli_close($link);
                             <?php while($row = mysqli_fetch_assoc($alliances_list)): ?>
                             <tr class="border-t border-gray-700">
                                 <td class="p-2 text-white font-bold">[<?php echo htmlspecialchars($row['tag']); ?>] <?php echo htmlspecialchars($row['name']); ?></td>
-                                <td class="p-2"><?php echo $row['member_count']; ?></td>
+                                <td class="p-2"><?php echo $row['member_count']; ?> / 100</td>
                                 <td class="p-2 text-right">
                                     <?php if($row['has_applied']): ?>
                                         <span class="text-yellow-400 text-xs italic">Application Pending</span>
+                                    <?php elseif($row['member_count'] >= 100): ?>
+                                        <span class="text-red-400 text-xs italic">Full</span>
                                     <?php else: ?>
                                         <form action="lib/alliance_actions.php" method="POST">
                                             <input type="hidden" name="action" value="apply_to_alliance">
