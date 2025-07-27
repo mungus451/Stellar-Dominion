@@ -22,6 +22,7 @@ $main_nav_links = [
     'HOME' => '/dashboard.php',
     'BATTLE' => '/battle.php',
     'STRUCTURES' => '/structures.php',
+    'ALLIANCE' => '/alliance.php',
     'COMMUNITY' => '/community.php',
     'SIGN OUT' => '/auth/logout.php'
 ];
@@ -41,6 +42,9 @@ $sub_nav_links = [
         'Attack' => '/attack.php',
         'Training' => '/battle.php',
         'War History' => '/war_history.php'
+    ],
+    'ALLIANCE' => [
+        'Alliance Hub' => '/alliance.php',
     ],
     'STRUCTURES' => [
         // This category currently has no sub-navigation.
@@ -62,9 +66,11 @@ $active_page_path = '/' . $active_page;
 
 if (in_array($active_page, ['battle.php', 'attack.php', 'war_history.php'])) {
     $active_main_category = 'BATTLE';
+} elseif (in_array($active_page, ['alliance.php', 'create_alliance.php', 'edit_alliance.php'])) {
+    $active_main_category = 'ALLIANCE';
 } elseif (in_array($active_page, ['structures.php'])) {
     $active_main_category = 'STRUCTURES';
-} elseif (in_array($active_page, ['community.php', 'stats.php'])) { // Added stats.php
+} elseif (in_array($active_page, ['community.php', 'stats.php'])) { 
     $active_main_category = 'COMMUNITY';
 }
 // Note: 'HOME' is the default, so we don't need a separate check for it.
