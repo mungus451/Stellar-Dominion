@@ -103,7 +103,6 @@ $current_tab = isset($_GET['tab']) && $_GET['tab'] === 'disband' ? 'disband' : '
                         </div>
                     <?php endif; ?>
 
-                    <!-- Resource & Cost Summary -->
                     <div class="content-box rounded-lg p-4">
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                             <div><p class="text-xs uppercase">Citizens</p><p class="text-lg font-bold text-white"><?php echo number_format($user_data['untrained_citizens']); ?></p></div>
@@ -113,7 +112,6 @@ $current_tab = isset($_GET['tab']) && $_GET['tab'] === 'disband' ? 'disband' : '
                         </div>
                     </div>
                     
-                    <!-- Tabs -->
                     <div class="border-b border-gray-600">
                         <nav class="flex space-x-2" aria-label="Tabs">
                             <?php
@@ -129,14 +127,13 @@ $current_tab = isset($_GET['tab']) && $_GET['tab'] === 'disband' ? 'disband' : '
                         </nav>
                     </div>
 
-                    <!-- Training Form -->
                     <div id="train-tab-content" class="<?php if ($current_tab !== 'train') echo 'hidden'; ?>">
                         <form id="train-form" action="lib/train.php" method="POST" class="space-y-4" data-charisma-discount="<?php echo 1 - ($user_data['charisma_points'] * 0.01); ?>">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <?php foreach($unit_costs as $unit => $cost): ?>
                                 <div class="content-box rounded-lg p-3">
                                     <div class="flex items-center space-x-3">
-                                        <img src="https://placehold.co/64x64/1f2937/06b6d4?text=?" alt="<?php echo $unit_names[$unit]; ?> Icon" class="w-12 h-12 rounded-md flex-shrink-0">
+                                        <img src="assets/img/<?php echo strtolower($unit_names[$unit]); ?>.png" alt="<?php echo $unit_names[$unit]; ?> Icon" class="w-12 h-12 rounded-md flex-shrink-0">
                                         <div class="flex-grow">
                                             <p class="font-bold text-white"><?php echo $unit_names[$unit]; ?></p>
                                             <p class="text-xs">Cost: <?php echo number_format($cost); ?> Credits</p>
@@ -156,14 +153,13 @@ $current_tab = isset($_GET['tab']) && $_GET['tab'] === 'disband' ? 'disband' : '
                         </form>
                     </div>
                     
-                    <!-- Untraining/Disband Form -->
                     <div id="disband-tab-content" class="<?php if ($current_tab !== 'disband') echo 'hidden'; ?>">
                         <form id="disband-form" action="lib/untrain.php" method="POST" class="space-y-4">
                              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <?php foreach($unit_costs as $unit => $cost): ?>
                                 <div class="content-box rounded-lg p-3">
                                     <div class="flex items-center space-x-3">
-                                        <img src="https://placehold.co/64x64/1f2937/ef4444?text=?" alt="<?php echo $unit_names[$unit]; ?> Icon" class="w-12 h-12 rounded-md flex-shrink-0">
+                                        <img src="assets/img/<?php echo strtolower($unit_names[$unit]); ?>.png" alt="<?php echo $unit_names[$unit]; ?> Icon" class="w-12 h-12 rounded-md flex-shrink-0">
                                         <div class="flex-grow">
                                             <p class="font-bold text-white"><?php echo $unit_names[$unit]; ?></p>
                                             <p class="text-xs">Refund: <?php echo number_format($cost * 0.75); ?> Credits</p>
