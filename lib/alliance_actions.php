@@ -67,27 +67,60 @@ if ($action === 'edit') {
     $description = trim($_POST['description']);
     $alliance_id = (int)$_POST['alliance_id'];
     $avatar_path = null;
+    $upload_error_message = null;
 
     mysqli_begin_transaction($link);
     try {
         // Verify user is the leader of this alliance
-        $sql_verify = "SELECT leader_id, avatar_path FROM alliances WHERE id = ?";
-        // ... (Code to verify leader and get current avatar path)
+        $sql_verify = "SELECT leader_id FROM alliances WHERE id = ? FOR UPDATE";
+        $stmt_verify = mysqli_prepare($link, $sql_verify);
+        mysqli_stmt_bind_param($stmt_verify, "i", $alliance_id);
+        mysqli_stmt_execute($stmt_verify);
+        $alliance_data = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_verify));
+        mysqli_stmt_close($stmt_verify);
 
-        // --- Avatar Upload Logic (similar to update_profile.php) ---
-        if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
-            // ... (Full avatar upload, validation, and move logic here) ...
-            // On success, set $avatar_path to the new path.
+        if (!$alliance_data || $alliance_data['leader_id'] != $user_id) {
+            throw new Exception("You do not have permission to edit this alliance.");
+        }
+
+        // Avatar Upload Logic, similar to update_profile.php
+        if (isset($_FILES['avatar']) && $_FILES['avatar']['error'] !== UPLOAD_ERR_NO_FILE) {
+            if ($_FILES['avatar']['error'] === UPLOAD_ERR_OK) {
+                $upload_dir = __DIR__ . '/../uploads/alliances/';
+                if (!is_dir($upload_dir)) { mkdir($upload_dir, 0755, true); }
+                if (!is_writable($upload_dir)) { throw new Exception("Permission Error: Directory 'uploads/alliances/' is not writable."); }
+
+                $allowed_ext = ['jpg', 'jpeg', 'png', 'gif'];
+                $file_ext = strtolower(pathinfo($_FILES['avatar']['name'], PATHINFO_EXTENSION));
+
+                if ($_FILES['avatar']['size'] > 10000000) { throw new Exception("File is too large (Max 10MB)."); }
+                if (!in_array($file_ext, $allowed_ext)) { throw new Exception("Invalid file type (JPG, PNG, GIF only)."); }
+
+                $new_file_name = 'alliance_' . $alliance_id . '_' . time() . '.' . $file_ext;
+                $destination = $upload_dir . $new_file_name;
+
+                if (move_uploaded_file($_FILES['avatar']['tmp_name'], $destination)) {
+                    $avatar_path = '/uploads/alliances/' . $new_file_name;
+                } else {
+                    throw new Exception("Could not move uploaded file.");
+                }
+            } else {
+                throw new Exception("An error occurred during file upload.");
+            }
         }
 
         // Update database
         if ($avatar_path) {
             $sql_update = "UPDATE alliances SET description = ?, avatar_path = ? WHERE id = ?";
-            // ... (bind and execute with avatar) ...
+            $stmt_update = mysqli_prepare($link, $sql_update);
+            mysqli_stmt_bind_param($stmt_update, "ssi", $description, $avatar_path, $alliance_id);
         } else {
             $sql_update = "UPDATE alliances SET description = ? WHERE id = ?";
-            // ... (bind and execute without avatar) ...
+            $stmt_update = mysqli_prepare($link, $sql_update);
+            mysqli_stmt_bind_param($stmt_update, "si", $description, $alliance_id);
         }
+        mysqli_stmt_execute($stmt_update);
+        mysqli_stmt_close($stmt_update);
 
         mysqli_commit($link);
         $_SESSION['alliance_message'] = "Alliance profile updated!";
@@ -101,5 +134,6 @@ if ($action === 'edit') {
     exit;
 }
 
-// Add other actions like 'join', 'leave', 'promote', 'demote' here...
+header("location: /alliance.php");
+exit;
 ?>
