@@ -44,12 +44,13 @@ $sub_nav_links = [
         'War History' => '/war_history.php'
     ],
     'ALLIANCE' => [
-        'Alliance Hub' => '/alliance.php',
-        'Bank' => '/alliance_bank.php', // <-- ADDED LINK
-        'Structures' => '/alliance_structures.php',
-        'Recruitment' => '/alliance.php?tab=applications',
-        'Roles & Permissions' => '/alliance_roles.php'
-    ],
+    'Alliance Hub' => '/alliance.php',
+    'Bank' => '/alliance_bank.php',
+    'Structures' => '/alliance_structures.php',
+    'Forum' => '/alliance_forum.php', // <-- ADD THIS LINE
+    'Recruitment' => '/alliance.php?tab=applications',
+    'Roles & Permissions' => '/alliance_roles.php'
+],
     'STRUCTURES' => [
         // This category currently has no sub-navigation.
     ],
