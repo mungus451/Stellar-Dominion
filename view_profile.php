@@ -21,7 +21,10 @@ if ($profile_id <= 0) {
 }
 
 // --- DATA FETCHING for the profile being viewed ---
-$sql = "SELECT id, character_name, email, race, class, credits, level, net_worth, last_updated, workers, wealth_points, soldiers, guards, sentries, spies, avatar_path, biography FROM users WHERE id = ?";
+$sql = "SELECT u.id, u.character_name, u.race, u.class, u.level, u.net_worth, u.workers, u.soldiers, u.guards, u.avatar_path, u.biography, a.name as alliance_name, a.tag as alliance_tag 
+        FROM users u 
+        LEFT JOIN alliances a ON u.alliance_id = a.id 
+        WHERE u.id = ?";
 $stmt = mysqli_prepare($link, $sql);
 mysqli_stmt_bind_param($stmt, "i", $profile_id);
 mysqli_stmt_execute($stmt);
@@ -32,21 +35,6 @@ mysqli_stmt_close($stmt);
 if (!$profile_data) {
     header("location: /attack.php"); // User not found, redirect
     exit;
-}
-
-// --- CALCULATIONS FOR DISPLAY ---
-// Estimate current credits
-$last_upd = new DateTime($profile_data['last_updated']);
-$now = new DateTime();
-$mins_since_upd = ($now->getTimestamp() - $last_upd->getTimestamp()) / 60;
-$turns_to_proc = floor($mins_since_upd / 10);
-$estimated_credits = $profile_data['credits'];
-if ($turns_to_proc > 0) {
-    $w_income = $profile_data['workers'] * 50;
-    $b_income = 5000 + $w_income;
-    $wlth_bonus = 1 + ($profile_data['wealth_points'] * 0.01);
-    $inc_per_turn = floor($b_income * $wlth_bonus);
-    $estimated_credits += $inc_per_turn * $turns_to_proc;
 }
 
 // Army Size
@@ -87,6 +75,9 @@ $can_attack = $is_logged_in && ($viewer_id != $profile_id);
                     <div class="md:col-span-1 text-center">
                         <img src="<?php echo !empty($profile_data['avatar_path']) ? htmlspecialchars($profile_data['avatar_path']) : 'https://via.placeholder.com/200'; ?>" alt="Avatar" class="w-48 h-48 rounded-full mx-auto border-4 border-gray-600 object-cover shadow-lg">
                         <h2 class="font-title text-3xl text-white mt-4"><?php echo htmlspecialchars($profile_data['character_name']); ?></h2>
+                        <?php if ($profile_data['alliance_name']): ?>
+                            <p class="font-semibold text-cyan-300">[<?php echo htmlspecialchars($profile_data['alliance_tag']); ?>] <?php echo htmlspecialchars($profile_data['alliance_name']); ?></p>
+                        <?php endif; ?>
                         <p class="text-cyan-300"><?php echo htmlspecialchars(strtoupper($profile_data['race'])) . ' ' . htmlspecialchars(strtoupper($profile_data['class'])); ?></p>
                         <p class="text-sm mt-1">Level: <?php echo $profile_data['level']; ?></p>
                     </div>
@@ -111,7 +102,6 @@ $can_attack = $is_logged_in && ($viewer_id != $profile_id);
                              <ul class="mt-2 space-y-2 text-sm">
                                 <li class="flex justify-between"><span>Army Size:</span> <span class="text-white font-semibold"><?php echo number_format($army_size); ?> units</span></li>
                                 <li class="flex justify-between"><span>Workers:</span> <span class="text-white font-semibold"><?php echo number_format($profile_data['workers']); ?></span></li>
-                                <li class="flex justify-between"><span>Credits (Est.):</span> <span class="text-white font-semibold"><?php echo number_format($estimated_credits); ?></span></li>
                                 <li class="flex justify-between"><span>Net Worth:</span> <span class="text-white font-semibold"><?php echo number_format($profile_data['net_worth']); ?></span></li>
                              </ul>
                         </div>
