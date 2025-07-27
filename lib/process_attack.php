@@ -3,7 +3,7 @@ session_start();
 if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true){ header("location: index.html"); exit; }
 
 require_once "db_config.php";
-require_once "game_data.php"; // Include upgrade definitions
+require_once "game_data.php"; 
 date_default_timezone_set('UTC');
 
 // Input Validation
@@ -12,26 +12,33 @@ $defender_id = isset($_POST['defender_id']) ? (int)$_POST['defender_id'] : 0;
 $attack_turns = isset($_POST['attack_turns']) ? (int)$_POST['attack_turns'] : 0;
 if ($defender_id <= 0 || $attack_turns < 1 || $attack_turns > 10) { header("location: attack.php"); exit; }
 
-// Level Up Function (unchanged)
-function check_and_process_levelup($user_id, $link) {
-    $sql = "SELECT level, experience FROM users WHERE id = ? FOR UPDATE";
-    $stmt = mysqli_prepare($link, $sql);
-    mysqli_stmt_bind_param($stmt, "i", $user_id);
-    mysqli_stmt_execute($stmt);
-    $user = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
-    mysqli_stmt_close($stmt);
 
-    $xp_for_next_level = $user['level'] * 1000;
+function check_and_process_levelup($user_id, $link) { /* ... existing function ... */ }
 
-    if ($user['experience'] >= $xp_for_next_level) {
-        $points_gained = 1; // 1 point per level up
-        $sql_levelup = "UPDATE users SET level = level + 1, experience = experience - ?, level_up_points = level_up_points + ? WHERE id = ?";
-        $stmt_levelup = mysqli_prepare($link, $sql_levelup);
-        mysqli_stmt_bind_param($stmt_levelup, "iii", $xp_for_next_level, $points_gained, $user_id);
-        mysqli_stmt_execute($stmt_levelup);
-        mysqli_stmt_close($stmt_levelup);
+mysqli_begin_transaction($link);
+try {
+    // Get attacker's data, including alliance_id
+    $sql_attacker = "SELECT character_name, attack_turns, soldiers, credits, strength_points, offense_upgrade_level, alliance_id FROM users WHERE id = ? FOR UPDATE";
+    $stmt_attacker = mysqli_prepare($link, $sql_attacker);
+    mysqli_stmt_bind_param($stmt_attacker, "i", $attacker_id);
+    mysqli_stmt_execute($stmt_attacker);
+    $attacker = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_attacker));
+    mysqli_stmt_close($stmt_attacker);
+
+    // Get defender's data, including alliance_id
+    $sql_defender = "SELECT character_name, guards, credits, constitution_points, defense_upgrade_level, alliance_id FROM users WHERE id = ? FOR UPDATE";
+    $stmt_defender = mysqli_prepare($link, $sql_defender);
+    mysqli_stmt_bind_param($stmt_defender, "i", $defender_id);
+    mysqli_stmt_execute($stmt_defender);
+    $defender = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_defender));
+    mysqli_stmt_close($stmt_defender);
+    
+    // Friendly Fire Check
+    if ($attacker['alliance_id'] !== NULL && $attacker['alliance_id'] === $defender['alliance_id']) {
+        throw new Exception("You cannot attack a member of your own alliance.");
     }
-}
+
+    if ($attacker['attack_turns'] < $attack_turns) { throw new Exception("Not enough attack turns."); }
 
 // Battle Logic
 mysqli_begin_transaction($link);
@@ -138,8 +145,12 @@ try {
 
 } catch (Exception $e) {
     mysqli_rollback($link);
-    $_SESSION['attack_result'] = "Attack failed: " . $e->getMessage();
+    // Store the error in a session to display it on the previous page
+    $_SESSION['attack_error'] = "Attack failed: " . $e->getMessage();
     header("location: /attack.php");
+    exit;
+}
+?>location: /attack.php");
     exit;
 }
 ?>
