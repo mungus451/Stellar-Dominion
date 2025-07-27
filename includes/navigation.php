@@ -45,7 +45,8 @@ $sub_nav_links = [
     ],
     'ALLIANCE' => [
         'Alliance Hub' => '/alliance.php',
-        'Structures' => '/alliance_structures.php', // <-- ADDED LINK
+        'Bank' => '/alliance_bank.php', // <-- ADDED LINK
+        'Structures' => '/alliance_structures.php',
         'Recruitment' => '/alliance.php?tab=applications',
         'Roles & Permissions' => '/alliance_roles.php'
     ],
@@ -69,7 +70,7 @@ $active_page_path = '/' . $active_page;
 
 if (in_array($active_page, ['battle.php', 'attack.php', 'war_history.php'])) {
     $active_main_category = 'BATTLE';
-} elseif (in_array($active_page, ['alliance.php', 'create_alliance.php', 'edit_alliance.php', 'alliance_roles.php'])) {
+} elseif (in_array($active_page, ['alliance.php', 'create_alliance.php', 'edit_alliance.php', 'alliance_roles.php', 'alliance_bank.php', 'alliance_transfer.php'])) { // Added new pages
     $active_main_category = 'ALLIANCE';
 } elseif (in_array($active_page, ['structures.php'])) {
     $active_main_category = 'STRUCTURES';
