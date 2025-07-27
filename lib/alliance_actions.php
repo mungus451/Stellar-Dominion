@@ -1,11 +1,12 @@
 <?php
 /**
- * lib/alliance_actions.php
- *
- * Handles all server-side logic for alliance management, including creation,
- * applications, member management, role management, and purchasing structures.
- * This is a unified script combining all functionalities.
- */
+ * lib/alliance_actions.php
+ *
+ * Handles all server-side logic for alliance management, including creation,
+ * applications, member management, role management, purchasing structures,
+ * and member-to-member transfers.
+ * This is a unified script combining all functionalities.
+ */
 session_start();
 // Ensure the user is logged in before proceeding with any actions.
 if (!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true) {
@@ -28,7 +29,7 @@ mysqli_begin_transaction($link);
 try {
     // Fetch the current user's data and permissions.
     // Lock the row for update to prevent race conditions during the transaction.
-    $sql_user_info = "SELECT u.credits, u.character_name, u.alliance_id, u.alliance_role_id, ar.* FROM users u LEFT JOIN alliance_roles ar ON u.alliance_role_id = ar.id WHERE u.id = ? FOR UPDATE";
+    $sql_user_info = "SELECT u.credits, u.character_name, u.alliance_id, u.alliance_role_id, u.workers, u.soldiers, u.guards, u.sentries, u.spies, ar.* FROM users u LEFT JOIN alliance_roles ar ON u.alliance_role_id = ar.id WHERE u.id = ? FOR UPDATE";
     $stmt_info = mysqli_prepare($link, $sql_user_info);
     mysqli_stmt_bind_param($stmt_info, "i", $user_id);
     mysqli_stmt_execute($stmt_info);
@@ -340,6 +341,132 @@ try {
         mysqli_stmt_close($stmt_log);
 
         $_SESSION['alliance_message'] = "Successfully purchased " . $structure_details['name'] . "!";
+
+    } else if ($action === 'donate_credits') {
+        $redirect_url = '/alliance_bank.php';
+        $amount = isset($_POST['amount']) ? (int)$_POST['amount'] : 0;
+        if ($amount <= 0) {
+            throw new Exception("Invalid donation amount.");
+        }
+        if ($user_info['credits'] < $amount) {
+            throw new Exception("Not enough credits to donate.");
+        }
+
+        // 1. Deduct from user
+        $sql_deduct = "UPDATE users SET credits = credits - ? WHERE id = ?";
+        $stmt_deduct = mysqli_prepare($link, $sql_deduct);
+        mysqli_stmt_bind_param($stmt_deduct, "ii", $amount, $user_id);
+        mysqli_stmt_execute($stmt_deduct);
+        mysqli_stmt_close($stmt_deduct);
+
+        // 2. Add to alliance bank
+        $sql_add = "UPDATE alliances SET bank_credits = bank_credits + ? WHERE id = ?";
+        $stmt_add = mysqli_prepare($link, $sql_add);
+        mysqli_stmt_bind_param($stmt_add, "ii", $amount, $user_info['alliance_id']);
+        mysqli_stmt_execute($stmt_add);
+        mysqli_stmt_close($stmt_add);
+
+        // 3. Log transaction
+        $log_desc = "Donation from " . $user_info['character_name'];
+        $sql_log = "INSERT INTO alliance_bank_logs (alliance_id, user_id, type, amount, description) VALUES (?, ?, 'deposit', ?, ?)";
+        $stmt_log = mysqli_prepare($link, $sql_log);
+        mysqli_stmt_bind_param($stmt_log, "iiis", $user_info['alliance_id'], $user_id, $amount, $log_desc);
+        mysqli_stmt_execute($stmt_log);
+        mysqli_stmt_close($stmt_log);
+
+        $_SESSION['alliance_message'] = "Successfully donated " . number_format($amount) . " credits to the alliance bank.";
+
+    } else if ($action === 'transfer_credits') {
+        $redirect_url = '/alliance_transfer.php';
+        $recipient_id = isset($_POST['recipient_id']) ? (int)$_POST['recipient_id'] : 0;
+        $amount = isset($_POST['amount']) ? (int)$_POST['amount'] : 0;
+        $fee = floor($amount * 0.02);
+        $total_cost = $amount + $fee;
+
+        if ($amount <= 0 || $recipient_id <= 0) {
+            throw new Exception("Invalid amount or recipient.");
+        }
+        if ($user_info['credits'] < $total_cost) {
+            throw new Exception("Insufficient credits to cover the transfer and the 2% fee.");
+        }
+
+        // 1. Deduct from sender
+        $sql_deduct = "UPDATE users SET credits = credits - ? WHERE id = ?";
+        $stmt_deduct = mysqli_prepare($link, $sql_deduct);
+        mysqli_stmt_bind_param($stmt_deduct, "ii", $total_cost, $user_id);
+        mysqli_stmt_execute($stmt_deduct);
+        mysqli_stmt_close($stmt_deduct);
+
+        // 2. Add to recipient
+        $sql_add = "UPDATE users SET credits = credits + ? WHERE id = ? AND alliance_id = ?";
+        $stmt_add = mysqli_prepare($link, $sql_add);
+        mysqli_stmt_bind_param($stmt_add, "iii", $amount, $recipient_id, $user_info['alliance_id']);
+        mysqli_stmt_execute($stmt_add);
+        if (mysqli_stmt_affected_rows($stmt_add) == 0) {
+            throw new Exception("Recipient not found or not in your alliance.");
+        }
+        mysqli_stmt_close($stmt_add);
+
+        // 3. Add fee to alliance bank
+        $sql_fee = "UPDATE alliances SET bank_credits = bank_credits + ? WHERE id = ?";
+        $stmt_fee = mysqli_prepare($link, $sql_fee);
+        mysqli_stmt_bind_param($stmt_fee, "ii", $fee, $user_info['alliance_id']);
+        mysqli_stmt_execute($stmt_fee);
+        mysqli_stmt_close($stmt_fee);
+
+        $_SESSION['alliance_message'] = "Successfully transferred " . number_format($amount) . " credits. A fee of " . number_format($fee) . " was paid to the alliance bank.";
+
+    } else if ($action === 'transfer_units') {
+        $redirect_url = '/alliance_transfer.php';
+        $recipient_id = isset($_POST['recipient_id']) ? (int)$_POST['recipient_id'] : 0;
+        $unit_type = $_POST['unit_type'] ?? '';
+        $amount = isset($_POST['amount']) ? (int)$_POST['amount'] : 0;
+
+        $unit_costs = ['workers' => 100, 'soldiers' => 250, 'guards' => 250, 'sentries' => 500, 'spies' => 1000];
+        if ($amount <= 0 || $recipient_id <= 0 || !array_key_exists($unit_type, $unit_costs)) {
+            throw new Exception("Invalid amount, recipient, or unit type.");
+        }
+        if ($user_info[$unit_type] < $amount) {
+            throw new Exception("Not enough " . ucfirst($unit_type) . " to transfer.");
+        }
+
+        $fee = floor(($unit_costs[$unit_type] * $amount) * 0.02);
+        if ($user_info['credits'] < $fee) {
+            throw new Exception("Insufficient credits to pay the transfer fee of " . number_format($fee) . ".");
+        }
+
+        // 1. Deduct fee from sender
+        $sql_deduct_fee = "UPDATE users SET credits = credits - ? WHERE id = ?";
+        $stmt_deduct_fee = mysqli_prepare($link, $sql_deduct_fee);
+        mysqli_stmt_bind_param($stmt_deduct_fee, "ii", $fee, $user_id);
+        mysqli_stmt_execute($stmt_deduct_fee);
+        mysqli_stmt_close($stmt_deduct_fee);
+
+        // 2. Deduct units from sender
+        $sql_deduct_units = "UPDATE users SET `$unit_type` = `$unit_type` - ? WHERE id = ?";
+        $stmt_deduct_units = mysqli_prepare($link, $sql_deduct_units);
+        mysqli_stmt_bind_param($stmt_deduct_units, "ii", $amount, $user_id);
+        mysqli_stmt_execute($stmt_deduct_units);
+        mysqli_stmt_close($stmt_deduct_units);
+
+        // 3. Add units to recipient
+        $sql_add_units = "UPDATE users SET `$unit_type` = `$unit_type` + ? WHERE id = ? AND alliance_id = ?";
+        $stmt_add_units = mysqli_prepare($link, $sql_add_units);
+        mysqli_stmt_bind_param($stmt_add_units, "iii", $amount, $recipient_id, $user_info['alliance_id']);
+        mysqli_stmt_execute($stmt_add_units);
+        if (mysqli_stmt_affected_rows($stmt_add_units) == 0) {
+            throw new Exception("Recipient not found or not in your alliance.");
+        }
+        mysqli_stmt_close($stmt_add_units);
+
+        // 4. Add fee to alliance bank
+        $sql_fee = "UPDATE alliances SET bank_credits = bank_credits + ? WHERE id = ?";
+        $stmt_fee = mysqli_prepare($link, $sql_fee);
+        mysqli_stmt_bind_param($stmt_fee, "ii", $fee, $user_info['alliance_id']);
+        mysqli_stmt_execute($stmt_fee);
+        mysqli_stmt_close($stmt_fee);
+
+        $_SESSION['alliance_message'] = "Successfully transferred " . number_format($amount) . " " . ucfirst($unit_type) . ". A fee of " . number_format($fee) . " credits was paid to the alliance bank.";
     }
 
     // If we reach this point without any exceptions, commit the transaction.
