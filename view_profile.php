@@ -49,7 +49,8 @@ $can_attack = $is_logged_in && ($viewer_id != $profile_id) && !$is_same_alliance
 $minutes_until_next_turn = 0;
 $seconds_remainder = 0;
 $now = new DateTime('now', new DateTimeZone('UTC'));
-if($viewer_data) {
+// **FIX:** Added a check for !empty($viewer_data['last_updated'])
+if($viewer_data && !empty($viewer_data['last_updated'])) {
     $turn_interval_minutes = 10;
     $last_updated = new DateTime($viewer_data['last_updated'], new DateTimeZone('UTC'));
     $seconds_until_next_turn = ($turn_interval_minutes * 60) - (($now->getTimestamp() - $last_updated->getTimestamp()) % ($turn_interval_minutes * 60));
@@ -82,11 +83,76 @@ $active_page = 'attack.php'; // Keep the 'BATTLE' main nav active
                 <?php include_once 'includes/public_header.php'; ?>
             <?php endif; ?>
 
-            <div class="grid grid-cols-1 <?php if ($is_logged_in) echo 'lg:grid-cols-4'; ?> gap-4 <?php if ($is_### Fix Summary:
+            <div class="grid grid-cols-1 <?php if ($is_logged_in) echo 'lg:grid-cols-4'; ?> gap-4 <?php if ($is_logged_in) echo 'p-4'; else echo 'pt-20'; ?>">
+                <?php if ($is_logged_in && $viewer_data): ?>
+                <aside class="lg:col-span-1 space-y-4">
+                    <?php include 'includes/advisor.php'; ?>
+                    <div class="content-box rounded-lg p-4">
+                        <h3 class="font-title text-cyan-400 border-b border-gray-600 pb-2 mb-3">Your Stats</h3>
+                        <ul class="space-y-2 text-sm">
+                            <li class="flex justify-between"><span>Credits:</span> <span class="text-white font-semibold"><?php echo number_format($viewer_data['credits']); ?></span></li>
+                            <li class="flex justify-between"><span>Untrained Citizens:</span> <span class="text-white font-semibold"><?php echo number_format($viewer_data['untrained_citizens']); ?></span></li>
+                            <li class="flex justify-between"><span>Attack Turns:</span> <span class="text-white font-semibold"><?php echo $viewer_data['attack_turns']; ?></span></li>
+                            <li class="flex justify-between border-t border-gray-600 pt-2 mt-2">
+                                <span>Next Turn In:</span>
+                                <span id="next-turn-timer" class="text-cyan-300 font-bold" data-seconds-until-next-turn="<?php echo $seconds_until_next_turn; ?>"><?php echo sprintf('%02d:%02d', $minutes_until_next_turn, $seconds_remainder); ?></span>
+                            </li>
+                        </ul>
+                    </div>
+                </aside>
+                <?php endif; ?>
 
-* **Restored Page Layout:** The `view_profile.php` file has been updated to include the standard header, navigation, sidebar, and styling, making it look and feel like the rest of the application.
-* **Added Profile Details:** The page now correctly displays the target commander's key information, such as their avatar, level, race, class, alliance affiliation, army size, and biography.
-* **Integrated Attack Box:** The "Engage Target" interface is now properly integrated into the page and is only displayed when you are logged in and able to attack the target (i.e., not yourself and not an alliance member).
-* **Added Viewer Stats:** A sidebar has been added to show your own relevant stats (Credits, Attack Turns, etc.) for quick reference while scouting a target.
+                <main class="<?php echo $is_logged_in ? 'lg:col-span-3' : 'col-span-1'; ?> space-y-6">
+                    <?php if ($can_attack): ?>
+                    <div class="content-box rounded-lg p-4 bg-red-900/20 border-red-500/50">
+                         <h3 class="font-title text-lg text-red-400">Engage Target</h3>
+                        <form action="lib/process_attack.php" method="POST" class="flex items-center justify-between mt-2">
+                            <input type="hidden" name="defender_id" value="<?php echo $profile_data['id']; ?>">
+                            <div class="text-sm">
+                                <label for="attack_turns">Attack Turns (1-10):</label>
+                                <input type="number" id="attack_turns" name="attack_turns" min="1" max="10" value="1" class="bg-gray-900 border border-gray-600 rounded-md w-20 text-center p-1 ml-2">
+                            </div>
+                            <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition-colors">Launch Attack</button>
+                        </form>
+                    </div>
+                    <?php endif; ?>
 
-This fix resolves the visual bug and makes the scouting/attack page fully functional and consistent with the game's design.
+                    <div class="content-box rounded-lg p-6">
+                        <div class="flex flex-col md:flex-row md:items-center gap-6">
+                             <img src="<?php echo htmlspecialchars($profile_data['avatar_path'] ?? 'https://via.placeholder.com/150'); ?>" alt="Avatar" class="w-32 h-32 rounded-full border-2 border-gray-600 object-cover">
+                            <div class="flex-1">
+                                <h2 class="font-title text-3xl text-white"><?php echo htmlspecialchars($profile_data['character_name']); ?></h2>
+                                <p class="text-lg text-cyan-300"><?php echo htmlspecialchars(ucfirst($profile_data['race']) . ' ' . ucfirst($profile_data['class'])); ?></p>
+                                <p class="text-sm">Level: <?php echo $profile_data['level']; ?></p>
+                                <?php if ($profile_data['alliance_name']): ?>
+                                    <p class="text-sm">Alliance: <span class="font-bold">[<?php echo htmlspecialchars($profile_data['alliance_tag']); ?>] <?php echo htmlspecialchars($profile_data['alliance_name']); ?></span></p>
+                                <?php endif; ?>
+                                <p class="text-sm mt-1">Status: <span class="<?php echo $is_online ? 'text-green-400' : 'text-red-400'; ?>"><?php echo $is_online ? 'Online' : 'Offline'; ?></span></p>
+                            </div>
+                        </div>
+
+                        <div class="mt-6 border-t border-gray-700 pt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <h3 class="font-title text-cyan-400 mb-2">Fleet Composition</h3>
+                                <ul class="space-y-1 text-sm">
+                                    <li class="flex justify-between"><span>Total Army Size:</span> <span class="text-white font-semibold"><?php echo number_format($army_size); ?></span></li>
+                                    <li class="flex justify-between"><span>Soldiers:</span> <span class="text-white font-semibold"><?php echo number_format($profile_data['soldiers']); ?></span></li>
+                                    <li class="flex justify-between"><span>Guards:</span> <span class="text-white font-semibold"><?php echo number_format($profile_data['guards']); ?></span></li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h3 class="font-title text-cyan-400 mb-2">Commander's Biography</h3>
+                                <div class="text-gray-300 italic p-3 bg-gray-900/50 rounded-lg h-32 overflow-y-auto">
+                                    <?php echo !empty($profile_data['biography']) ? nl2br(htmlspecialchars($profile_data['biography'])) : 'No biography provided.'; ?>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+
+        </div>
+    </div>
+    <script src="assets/js/main.js" defer></script>
+</body>
+</html>
