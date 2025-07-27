@@ -31,11 +31,12 @@ switch ($race) {
 }
 
 $password_hash = password_hash($password, PASSWORD_DEFAULT);
+$current_time = gmdate('Y-m-d H:i:s'); // Get current UTC time
 
-$sql = "INSERT INTO users (email, character_name, password_hash, race, class, credits, untrained_citizens, level_up_points, avatar_path) VALUES (?, ?, ?, ?, ?, 100000, 1000, 1, ?)";
+$sql = "INSERT INTO users (email, character_name, password_hash, race, class, credits, untrained_citizens, level_up_points, avatar_path, last_updated) VALUES (?, ?, ?, ?, ?, 100000, 1000, 1, ?, ?)";
 
 if($stmt = mysqli_prepare($link, $sql)){
-    mysqli_stmt_bind_param($stmt, "ssssss", $email, $character_name, $password_hash, $race, $class, $avatar_path);
+    mysqli_stmt_bind_param($stmt, "sssssss", $email, $character_name, $password_hash, $race, $class, $avatar_path, $current_time);
 
     if(mysqli_stmt_execute($stmt)){
         $_SESSION["loggedin"] = true;
