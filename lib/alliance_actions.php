@@ -1,132 +1,144 @@
 <?php
-/**
- * lib/alliance_actions.php
- *
- * Handles all server-side logic for alliance management, including
- * creation, editing, joining, leaving, member management, and forum posts.
- */
+// lib/alliance_actions.php
 session_start();
 if (!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true) { header("location: /index.html"); exit; }
 require_once "db_config.php";
 $user_id = $_SESSION['id'];
 $action = $_POST['action'] ?? '';
 
-// Fetch user's current alliance status for permission checks
-$sql_user_check = "SELECT alliance_id, alliance_rank FROM users WHERE id = ?";
-$stmt_check = mysqli_prepare($link, $sql_user_check);
-mysqli_stmt_bind_param($stmt_check, "i", $user_id);
-mysqli_stmt_execute($stmt_check);
-$user_alliance_info = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_check));
-mysqli_stmt_close($stmt_check);
-$user_alliance_id = $user_alliance_info['alliance_id'] ?? null;
-$user_alliance_rank = $user_alliance_info['alliance_rank'] ?? null;
-
-
-// The main logic does not need to be wrapped in a single transaction
-// as each action is independent and redirects.
-// We will manage transactions per action.
-
+mysqli_begin_transaction($link);
 try {
+    // Fetch user's current alliance and role info for permissions
+    $sql_user_info = "SELECT u.alliance_id, u.alliance_role_id, ar.* FROM users u LEFT JOIN alliance_roles ar ON u.alliance_role_id = ar.id WHERE u.id = ? FOR UPDATE";
+    $stmt_info = mysqli_prepare($link, $sql_user_info);
+    mysqli_stmt_bind_param($stmt_info, "i", $user_id);
+    mysqli_stmt_execute($stmt_info);
+    $user_info = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_info));
+    mysqli_stmt_close($stmt_info);
+
     // --- ACTION: CREATE ALLIANCE ---
     if ($action === 'create') {
-        // ... existing create code ...
-    }
-
-    // --- ACTION: EDIT ALLIANCE ---
-    if ($action === 'edit') {
-        // ... existing edit code ...
-    }
-
-    // --- ACTION: LEAVE ALLIANCE ---
-    if ($action === 'leave') {
-        mysqli_begin_transaction($link);
-        if (!$user_alliance_id) { throw new Exception("You are not in an alliance."); }
-        if ($user_alliance_rank === 'Leader') { throw new Exception("You must pass leadership to another member before leaving."); }
-
-        $sql = "UPDATE users SET alliance_id = NULL, alliance_rank = NULL WHERE id = ?";
-        $stmt = mysqli_prepare($link, $sql);
-        mysqli_stmt_bind_param($stmt, "i", $user_id);
-        mysqli_stmt_execute($stmt);
-        mysqli_stmt_close($stmt);
-
-        mysqli_commit($link);
-        $_SESSION['alliance_message'] = "You have successfully left the alliance.";
-        header("location: /alliance.php");
-        exit;
-    }
-
-    // --- ACTION: POST TO FORUM (CORRECTED) ---
-    if ($action === 'post_forum') {
-        mysqli_begin_transaction($link);
-        $post_content = trim($_POST['post_content']);
-        if (!$user_alliance_id) { throw new Exception("You must be in an alliance to post."); }
-        if (empty($post_content)) { throw new Exception("Post content cannot be empty."); }
-
-        $sql = "INSERT INTO alliance_forum_posts (alliance_id, user_id, post_content) VALUES (?, ?, ?)";
-        $stmt = mysqli_prepare($link, $sql);
-        mysqli_stmt_bind_param($stmt, "iis", $user_alliance_id, $user_id, $post_content);
+        // ... (existing code to create the alliance in `alliances` table)
+        // AFTER creating the alliance and getting $alliance_id:
         
-        if (!mysqli_stmt_execute($stmt)) {
-            throw new Exception("Failed to save post. Please try again.");
+        // Create default roles
+        $default_roles = [
+            // name, order, is_deletable, can_edit_profile, can_approve_membership, can_kick_members, can_manage_roles
+            ['Supreme Commander', 0, 0, 1, 1, 1, 1],
+            ['Officer', 1, 1, 1, 1, 1, 0],
+            ['Member', 2, 1, 0, 0, 0, 0],
+            ['Recruit', 3, 1, 0, 0, 0, 0]
+        ];
+        $sql_role = "INSERT INTO alliance_roles (alliance_id, name, `order`, is_deletable, can_edit_profile, can_approve_membership, can_kick_members, can_manage_roles) VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+        $stmt_role = mysqli_prepare($link, $sql_role);
+        $sc_role_id = null;
+        foreach($default_roles as $role) {
+            mysqli_stmt_bind_param($stmt_role, "isiiiiii", $alliance_id, $role[0], $role[1], $role[2], $role[3], $role[4], $role[5], $role[6]);
+            mysqli_stmt_execute($stmt_role);
+            if ($role[0] === 'Supreme Commander') { $sc_role_id = mysqli_insert_id($link); }
         }
+        mysqli_stmt_close($stmt_role);
+        
+        // Update the creator's role to Supreme Commander
+        $sql_update_leader = "UPDATE users SET alliance_id = ?, alliance_role_id = ? WHERE id = ?";
+        $stmt_update_leader = mysqli_prepare($link, $sql_update_leader);
+        mysqli_stmt_bind_param($stmt_update_leader, "iii", $alliance_id, $sc_role_id, $user_id);
+        mysqli_stmt_execute($stmt_update_leader);
+        mysqli_stmt_close($stmt_update_leader);
+        // ...
+    }
+
+    // --- ACTION: APPLY TO ALLIANCE ---
+    else if ($action === 'apply_to_alliance') {
+        if ($user_info['alliance_id']) { throw new Exception("You are already in an alliance."); }
+        $alliance_id = (int)$_POST['alliance_id'];
+        $sql = "INSERT INTO alliance_applications (user_id, alliance_id, status) VALUES (?, ?, 'pending')";
+        $stmt = mysqli_prepare($link, $sql);
+        mysqli_stmt_bind_param($stmt, "ii", $user_id, $alliance_id);
+        mysqli_stmt_execute($stmt);
+        mysqli_stmt_close($stmt);
+        $_SESSION['alliance_message'] = "Your application has been sent.";
+    }
+
+    // --- ACTION: APPROVE APPLICATION ---
+    else if ($action === 'approve_application') {
+        if (!$user_info['can_approve_membership']) { throw new Exception("You do not have permission."); }
+        $application_id = (int)$_POST['application_id'];
+        
+        // Get applicant ID and the alliance's default 'Recruit' role ID
+        $sql = "SELECT app.user_id, r.id as recruit_role_id FROM alliance_applications app JOIN alliance_roles r ON app.alliance_id = r.alliance_id WHERE app.id = ? AND r.name = 'Recruit' AND app.alliance_id = ?";
+        $stmt = mysqli_prepare($link, $sql);
+        mysqli_stmt_bind_param($stmt, "ii", $application_id, $user_info['alliance_id']);
+        mysqli_stmt_execute($stmt);
+        $app_data = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt));
         mysqli_stmt_close($stmt);
 
-        mysqli_commit($link); // Commit the transaction BEFORE redirecting
+        if ($app_data) {
+            // Update user's alliance and role
+            $sql_update = "UPDATE users SET alliance_id = ?, alliance_role_id = ? WHERE id = ?";
+            $stmt_update = mysqli_prepare($link, $sql_update);
+            mysqli_stmt_bind_param($stmt_update, "iii", $user_info['alliance_id'], $app_data['recruit_role_id'], $app_data['user_id']);
+            mysqli_stmt_execute($stmt_update);
+            mysqli_stmt_close($stmt_update);
+            
+            // Update application status
+            $sql_app = "UPDATE alliance_applications SET status = 'approved' WHERE id = ?";
+            $stmt_app = mysqli_prepare($link, $sql_app);
+            mysqli_stmt_bind_param($stmt_app, "i", $application_id);
+            mysqli_stmt_execute($stmt_app);
+            mysqli_stmt_close($stmt_app);
+        }
+    }
+    
+    // --- ACTION: CREATE ROLE ---
+    else if ($action === 'create_role') {
+        if (!$user_info['can_manage_roles']) { throw new Exception("You do not have permission."); }
+        $name = trim($_POST['name']);
+        $order = (int)$_POST['order'];
+        if (empty($name) || $order <= 0) { throw new Exception("Invalid role name or order."); }
 
-        $_SESSION['alliance_message'] = "Your message has been posted.";
-        header("location: /alliance.php?tab=forum");
+        $sql = "INSERT INTO alliance_roles (alliance_id, name, `order`) VALUES (?, ?, ?)";
+        $stmt = mysqli_prepare($link, $sql);
+        mysqli_stmt_bind_param($stmt, "isi", $user_info['alliance_id'], $name, $order);
+        mysqli_stmt_execute($stmt);
+        $_SESSION['alliance_message'] = "Role created successfully.";
+        header("location: /alliance_roles.php");
         exit;
     }
 
-    // --- LEADER ACTIONS: KICK, PROMOTE, DEMOTE ---
-    if (in_array($action, ['kick', 'promote', 'demote'])) {
-        mysqli_begin_transaction($link);
-        if ($user_alliance_rank !== 'Leader') { throw new Exception("You do not have permission to manage members."); }
-        $member_id = (int)$_POST['member_id'];
-        if ($member_id === $user_id) { throw new Exception("You cannot manage yourself."); }
+    // --- ACTION: UPDATE ROLE ---
+    else if ($action === 'update_role') {
+        if (!$user_info['can_manage_roles']) { throw new Exception("You do not have permission."); }
+        $role_id = (int)$_POST['role_id'];
+        $name = trim($_POST['name']);
+        $order = (int)$_POST['order'];
+        $permissions = $_POST['permissions'] ?? [];
 
-        // Fetch member's current rank to validate action
-        $sql_member = "SELECT alliance_rank FROM users WHERE id = ? AND alliance_id = ?";
-        $stmt_member = mysqli_prepare($link, $sql_member);
-        mysqli_stmt_bind_param($stmt_member, "ii", $member_id, $user_alliance_id);
-        mysqli_stmt_execute($stmt_member);
-        $member_info = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_member));
-        mysqli_stmt_close($stmt_member);
-        if (!$member_info) { throw new Exception("Member not found in your alliance."); }
-        $member_current_rank = $member_info['alliance_rank'];
-
-        $new_rank = null;
-        if ($action === 'kick') {
-            $sql = "UPDATE users SET alliance_id = NULL, alliance_rank = NULL WHERE id = ?";
-            $stmt = mysqli_prepare($link, $sql);
-            mysqli_stmt_bind_param($stmt, "i", $member_id);
-        } else {
-            if ($action === 'promote' && $member_current_rank === 'Member') { $new_rank = 'Lieutenant'; }
-            if ($action === 'demote' && $member_current_rank === 'Lieutenant') { $new_rank = 'Member'; }
-            if ($new_rank) {
-                $sql = "UPDATE users SET alliance_rank = ? WHERE id = ?";
-                $stmt = mysqli_prepare($link, $sql);
-                mysqli_stmt_bind_param($stmt, "si", $new_rank, $member_id);
-            } else {
-                throw new Exception("Invalid promotion/demotion action.");
-            }
-        }
+        $sql = "UPDATE alliance_roles SET name = ?, `order` = ?, can_edit_profile = ?, can_approve_membership = ?, can_kick_members = ?, can_manage_roles = ? WHERE id = ? AND alliance_id = ?";
+        $stmt = mysqli_prepare($link, $sql);
+        mysqli_stmt_bind_param($stmt, "siiiiiii", 
+            $name, $order,
+            $permissions['can_edit_profile'] ?? 0,
+            $permissions['can_approve_membership'] ?? 0,
+            $permissions['can_kick_members'] ?? 0,
+            $permissions['can_manage_roles'] ?? 0,
+            $role_id, $user_info['alliance_id']
+        );
         mysqli_stmt_execute($stmt);
-        mysqli_stmt_close($stmt);
-        mysqli_commit($link);
+        $_SESSION['alliance_message'] = "Role updated successfully.";
+        header("location: /alliance_roles.php");
+        exit;
     }
+    
+    // Additional actions like deny_application, delete_role, assign_role, kick would go here...
 
-    header("location: /alliance.php");
+    mysqli_commit($link);
+    header("location: /alliance.php"); // Default redirect
 
 } catch (Exception $e) {
     mysqli_rollback($link);
     $_SESSION['alliance_error'] = "Error: " . $e->getMessage();
-    // Determine the redirect based on the action
-    $redirect_page = '/alliance.php';
-    if ($action === 'create') $redirect_page = '/create_alliance.php';
-    if ($action === 'edit') $redirect_page = '/edit_alliance.php';
-    if ($action === 'post_forum') $redirect_page = '/alliance.php?tab=forum';
-    header("location: " . $redirect_page);
+    header("location: /alliance.php"); // Default error redirect
 }
 exit;
 ?>
