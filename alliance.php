@@ -69,6 +69,16 @@ mysqli_close($link);
     <div class="container mx-auto p-4 md:p-8">
         <?php include_once 'includes/navigation.php'; ?>
         <main class="space-y-4">
+            <?php if(isset($_SESSION['alliance_error'])): ?>
+                <div class="bg-red-900 border border-red-500/50 text-red-300 p-3 rounded-md text-center">
+                    <?php echo htmlspecialchars($_SESSION['alliance_error']); unset($_SESSION['alliance_error']); ?>
+                </div>
+            <?php endif; ?>
+            <?php if(isset($_SESSION['alliance_message'])): ?>
+                <div class="bg-cyan-900 border border-cyan-500/50 text-cyan-300 p-3 rounded-md text-center">
+                    <?php echo htmlspecialchars($_SESSION['alliance_message']); unset($_SESSION['alliance_message']); ?>
+                </div>
+            <?php endif; ?>
             <?php if ($alliance): ?>
                 <div class="content-box rounded-lg p-6">
                     <div class="flex flex-col md:flex-row md:items-center md:justify-between">
