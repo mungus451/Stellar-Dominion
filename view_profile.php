@@ -1,12 +1,4 @@
 <?php
-/**
- * view_profile.php
- *
- * Displays a public profile for a selected user.
- * If the viewer is logged in, it provides an interface to attack the user.
- */
-
-// --- SESSION AND DATABASE SETUP ---
 session_start();
 require_once "lib/db_config.php";
 date_default_timezone_set('UTC');
@@ -15,73 +7,49 @@ $is_logged_in = isset($_SESSION["loggedin"]) && $_SESSION["loggedin"] === true;
 $viewer_id = $is_logged_in ? $_SESSION['id'] : 0;
 $profile_id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-if ($profile_id <= 0) {
-    header("location: /attack.php"); // Or to a 404 page
-    exit;
-}
+if ($profile_id <= 0) { header("location: /attack.php"); exit; }
 
 // --- DATA FETCHING for the profile being viewed ---
-$sql = "SELECT u.id, u.character_name, u.race, u.class, u.level, u.net_worth, u.workers, u.soldiers, u.guards, u.avatar_path, u.biography, a.name as alliance_name, a.tag as alliance_tag 
-        FROM users u 
-        LEFT JOIN alliances a ON u.alliance_id = a.id 
-        WHERE u.id = ?";
-$stmt = mysqli_prepare($link, $sql);
-mysqli_stmt_bind_param($stmt, "i", $profile_id);
-mysqli_stmt_execute($stmt);
-$result = mysqli_stmt_get_result($stmt);
-$profile_data = mysqli_fetch_assoc($result);
-mysqli_stmt_close($stmt);
+$sql_profile = "SELECT u.*, a.name as alliance_name, a.tag as alliance_tag 
+                FROM users u 
+                LEFT JOIN alliances a ON u.alliance_id = a.id 
+                WHERE u.id = ?";
+$stmt_profile = mysqli_prepare($link, $sql_profile);
+mysqli_stmt_bind_param($stmt_profile, "i", $profile_id);
+mysqli_stmt_execute($stmt_profile);
+$profile_data = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_profile));
+mysqli_stmt_close($stmt_profile);
 
-if (!$profile_data) {
-    header("location: /attack.php"); // User not found, redirect
-    exit;
+if (!$profile_data) { header("location: /attack.php"); exit; }
+
+// Fetch viewer's data to check for alliance match
+$viewer_data = null;
+if ($is_logged_in) {
+    $sql_viewer = "SELECT alliance_id FROM users WHERE id = ?";
+    $stmt_viewer = mysqli_prepare($link, $sql_viewer);
+    mysqli_stmt_bind_param($stmt_viewer, "i", $viewer_id);
+    mysqli_stmt_execute($stmt_viewer);
+    $viewer_data = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_viewer));
+    mysqli_stmt_close($stmt_viewer);
 }
 
-// Army Size
-$army_size = $profile_data['soldiers'] + $profile_data['guards'];
-
 // Determine if the attack interface should be shown
-$can_attack = $is_logged_in && ($viewer_id != $profile_id);
+$is_same_alliance = ($viewer_data && $profile_data['alliance_id'] && $viewer_data['alliance_id'] === $profile_data['alliance_id']);
+$can_attack = $is_logged_in && ($viewer_id != $profile_id) && !$is_same_alliance;
+
+$army_size = $profile_data['soldiers'] + $profile_data['guards'];
 
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Stellar Dominion - Profile of <?php echo htmlspecialchars($profile_data['character_name']); ?></title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/style.css">
-</head>
+    </head>
 <body class="text-gray-400 antialiased">
-    <div class="min-h-screen bg-cover bg-center bg-fixed" style="background-image: url('https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1742&q=80');">
+    <div class="min-h-screen bg-cover bg-center bg-fixed">
         <div class="container mx-auto p-4 md:p-8">
-
-            <?php
-            // Show navigation only if the viewer is logged in
-            if ($is_logged_in) {
-                $active_page = 'attack.php'; // Highlight 'BATTLE' in the nav
-                include_once 'includes/navigation.php';
-            } else {
-                // You could include a simpler public header here if desired
-                echo '<header class="text-center mb-4"><h1 class="text-5xl font-title text-cyan-400" style="text-shadow: 0 0 8px rgba(6, 182, 212, 0.7);">STELLAR DOMINION</h1></header>';
-            }
-            ?>
-
             <main class="content-box rounded-lg p-6 mt-4">
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="md:col-span-1 text-center">
-                        <img src="<?php echo !empty($profile_data['avatar_path']) ? htmlspecialchars($profile_data['avatar_path']) : 'https://via.placeholder.com/200'; ?>" alt="Avatar" class="w-48 h-48 rounded-full mx-auto border-4 border-gray-600 object-cover shadow-lg">
-                        <h2 class="font-title text-3xl text-white mt-4"><?php echo htmlspecialchars($profile_data['character_name']); ?></h2>
-                        <?php if ($profile_data['alliance_name']): ?>
-                            <p class="font-semibold text-cyan-300">[<?php echo htmlspecialchars($profile_data['alliance_tag']); ?>] <?php echo htmlspecialchars($profile_data['alliance_name']); ?></p>
-                        <?php endif; ?>
-                        <p class="text-cyan-300"><?php echo htmlspecialchars(strtoupper($profile_data['race'])) . ' ' . htmlspecialchars(strtoupper($profile_data['class'])); ?></p>
-                        <p class="text-sm mt-1">Level: <?php echo $profile_data['level']; ?></p>
-                    </div>
-
                     <div class="md:col-span-2 space-y-4">
                         <?php if ($can_attack): ?>
                         <div class="bg-gray-800 rounded-lg p-4">
@@ -96,31 +64,10 @@ $can_attack = $is_logged_in && ($viewer_id != $profile_id);
                             </form>
                         </div>
                         <?php endif; ?>
-
-                        <div class="bg-gray-800 rounded-lg p-4">
-                             <h3 class="font-title text-lg text-cyan-400">Statistics</h3>
-                             <ul class="mt-2 space-y-2 text-sm">
-                                <li class="flex justify-between"><span>Army Size:</span> <span class="text-white font-semibold"><?php echo number_format($army_size); ?> units</span></li>
-                                <li class="flex justify-between"><span>Workers:</span> <span class="text-white font-semibold"><?php echo number_format($profile_data['workers']); ?></span></li>
-                                <li class="flex justify-between"><span>Net Worth:</span> <span class="text-white font-semibold"><?php echo number_format($profile_data['net_worth']); ?></span></li>
-                             </ul>
                         </div>
-
-                        <div class="bg-gray-800 rounded-lg p-4">
-                            <h3 class="font-title text-lg text-cyan-400">Biography</h3>
-                            <p class="mt-2 text-sm italic">
-                                <?php echo !empty($profile_data['biography']) ? nl2br(htmlspecialchars($profile_data['biography'])) : 'This commander has not yet written their saga.'; ?>
-                            </p>
-                        </div>
-                    </div>
                 </div>
             </main>
-            <?php if ($is_logged_in) echo '</div>'; // Closes .main-bg div from navigation.php ?>
         </div>
     </div>
-    <?php if ($is_logged_in): ?>
-    <script src="assets/js/main.js" defer></script>
-    <?php endif; ?>
-    <script>lucide.createIcons();</script>
 </body>
 </html>
