@@ -4,7 +4,7 @@ if (!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true) { header("l
 require_once "lib/db_config.php";
 
 $user_id = $_SESSION['id'];
-$active_page = 'alliance.php';
+$active_page = 'edit_alliance.php'; // Corrected active page identifier
 $alliance = null;
 
 // Fetch the user's alliance ID first
@@ -37,13 +37,26 @@ mysqli_close($link);
 ?>
 <!DOCTYPE html>
 <html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Stellar Dominion - Edit Alliance</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
 <body class="text-gray-400 antialiased">
-<div class="min-h-screen bg-cover bg-center bg-fixed" style="background-image: url('https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1742&q=80');">
+<div class="min-h-screen bg-cover bg-center bg-fixed" style="background-image: url('assets/img/background.jpg');">
 <div class="container mx-auto p-4 md:p-8">
     <?php include_once 'includes/navigation.php'; ?>
     <main class="content-box rounded-lg p-6 mt-4 max-w-2xl mx-auto space-y-6">
         <div>
             <h1 class="font-title text-3xl text-cyan-400 border-b border-gray-600 pb-2 mb-4">Edit Alliance Profile</h1>
+            <?php if(isset($_SESSION['alliance_message'])): ?>
+                <div class="bg-cyan-900 border border-cyan-500/50 text-cyan-300 p-3 rounded-md text-center mb-4">
+                    <?php echo htmlspecialchars($_SESSION['alliance_message']); unset($_SESSION['alliance_message']); ?>
+                </div>
+            <?php endif; ?>
             <?php if(isset($_SESSION['alliance_error'])): ?>
                 <div class="bg-red-900 border border-red-500/50 text-red-300 p-3 rounded-md text-center mb-4">
                     <?php echo htmlspecialchars($_SESSION['alliance_error']); unset($_SESSION['alliance_error']); ?>
@@ -85,5 +98,6 @@ mysqli_close($link);
     </main>
 </div>
 </div>
+<script>lucide.createIcons();</script>
 </body>
 </html>
