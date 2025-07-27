@@ -19,8 +19,8 @@ $credits_per_worker = 50;
 $base_income_per_turn = 5000;
 
 // Main Logic
-// Fetch new upgrade columns along with other user data
-$sql_select_users = "SELECT id, last_updated, workers, wealth_points, economy_upgrade_level, population_level FROM users"; 
+// Fetch new upgrade columns and alliance_id along with other user data
+$sql_select_users = "SELECT id, last_updated, workers, wealth_points, economy_upgrade_level, population_level, alliance_id FROM users"; 
 $result = mysqli_query($link, $sql_select_users);
 
 if ($result) {
@@ -50,10 +50,20 @@ if ($result) {
             $total_base_income = $base_income_per_turn + $worker_income;
             $wealth_bonus = 1 + ($user['wealth_points'] * 0.01);
             $income_per_turn = floor(($total_base_income * $wealth_bonus) * $economy_upgrade_multiplier);
-            $gained_credits = $income_per_turn * $turns_to_process;
+
+            // --- ALLIANCE BONUS CALCULATION ---
+            $alliance_credit_bonus = 0;
+            $alliance_citizen_bonus = 0;
+            if($user['alliance_id'] !== NULL) {
+                // Example: 5% credit bonus
+                $alliance_credit_bonus = floor($income_per_turn * 0.05);
+                // Example: +1 citizen bonus every turn for being in an alliance
+                $alliance_citizen_bonus = 1 * $turns_to_process; 
+            }
             
+            $gained_credits = ($income_per_turn * $turns_to_process) + ($alliance_credit_bonus * $turns_to_process);
             $gained_attack_turns = $turns_to_process * $attack_turns_per_turn;
-            $gained_citizens = $turns_to_process * $citizens_per_turn;
+            $gained_citizens = ($turns_to_process * $citizens_per_turn) + $alliance_citizen_bonus;
             $current_utc_time_str = gmdate('Y-m-d H:i:s');
 
             $sql_update = "UPDATE users SET 
