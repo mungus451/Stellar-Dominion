@@ -89,28 +89,28 @@ if ($is_logged_in) {
                         <h3 class="font-title text-2xl text-cyan-400 mb-4 border-b border-gray-600 pb-2">Development Newsfeed</h3>
                         
                         <div class="mb-8 pb-4 border-b border-gray-700">
-                            <h4 class="font-title text-xl text-yellow-400">Major Upgrade System Overhaul & New Structures!</h4>
-                            <p class="text-xs text-gray-500 mb-2">Posted: 2025-07-25</p>
-                            <p class="text-gray-300">We've completely refactored the empire structure system! All permanent empire upgrades have been moved to the Structures page and categorized for clarity. This new, flexible system allows us to add more diverse and interesting upgrade paths in the future. Check out the new Offense, Defense, Economy, and Population upgrade trees and start specializing your empire today!</p>
+                            <h4 class="font-title text-xl text-yellow-400">Alliance Management Overhaul: Roles & Permissions are LIVE!</h4>
+                            <p class="text-xs text-gray-500 mb-2">Posted: 2025-07-26</p>
+                            <p class="text-gray-300">Commanders, today marks a massive leap forward in alliance management. We have rolled out a comprehensive Roles and Permissions system! Alliance leaders, now designated as 'Supreme Commanders', can create an unlimited number of custom roles within their alliance. Assign granular permissions for editing the alliance profile, approving new members, kicking members, and even delegating the management of roles itself. This feature provides the ultimate flexibility to structure your alliance's hierarchy exactly as you see fit. Check out the new "Roles & Permissions" tab in your Alliance Hub to begin customizing your command structure!</p>
                         </div>
 
                         <div class="mb-8 pb-4 border-b border-gray-700">
-                            <h4 class="font-title text-xl text-yellow-400">Galactic Rankings and Enhanced Attack List</h4>
-                            <p class="text-xs text-gray-500 mb-2">Posted: 2025-07-24</p>
-                            <p class="text-gray-300">The attack page has been revamped to better reflect the state of the galaxy. We've introduced a new comprehensive ranking algorithm that considers experience, population, and military victories to score commanders. The target list now proudly displays player avatars, race, class, and online status, allowing for more strategic target selection.</p>
+                            <h4 class="font-title text-xl text-yellow-400">Join the Ranks: Alliance Applications Now Open</h4>
+                            <p class="text-xs text-gray-500 mb-2">Posted: 2025-07-26</p>
+                            <p class="text-gray-300">Lone wolves, your time has come to find a pack! We've introduced a formal application system for joining alliances. Commanders without an alliance can now browse a list of active alliances and submit an application to join. For alliance leadership, a new "Applications" tab is now available in the Alliance Hub where authorized members can review, approve, or deny incoming requests. This streamlined process makes recruitment easier and more organized than ever before.</p>
                         </div>
-                        
-                        <div class="mb-6">
-                            <h4 class="font-title text-xl text-yellow-400">Player Avatars & Banking System Introduced!</h4>
-                            <p class="text-xs text-gray-500 mb-2">Posted: 2025-07-23</p>
-                            <p class="text-gray-300">Commanders can now express their identity! You can now upload a custom avatar on your Profile page. Default racial avatars have been assigned to all existing commanders. In addition, the Interstellar Bank is now open for business. Protect your hard-earned credits from plunder by depositing them daily. Be strategic—deposits are limited!</p>
+
+                        <div class="mb-8 pb-4 border-b border-gray-700">
+                            <h4 class="font-title text-xl text-yellow-400">Major Upgrade System Overhaul & New Structures!</h4>
+                            <p class="text-xs text-gray-500 mb-2">Posted: 2025-07-25</p>
+                            <p class="text-gray-300">We've completely refactored the empire structure system! All permanent empire upgrades have been moved to the Structures page and categorized for clarity. This new, flexible system allows us to add more diverse and interesting upgrade paths in the future. Check out the new Offense, Defense, Economy, and Population upgrade trees and start specializing your empire today!</p>
                         </div>
                     </div>
 
                     <div class="content-box rounded-lg p-6 text-center">
                          <h3 class="font-title text-2xl text-cyan-400 mb-2">Join the Community</h3>
                          <p class="mb-4">Connect with other commanders, discuss strategies, and get the latest updates on our official Discord server.</p>
-                         <a href="https://discord.com/channels/1397295425777696768/1397295426415235214" target="_blank" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-colors text-lg">
+                         <a href="https://discord.com/channels/13972954257776968/1397295426415235214" target="_blank" class="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-8 rounded-lg transition-colors text-lg">
                              <i data-lucide="message-square" class="mr-3"></i>
                              Join Discord
                          </a>
