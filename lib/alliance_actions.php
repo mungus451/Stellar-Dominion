@@ -12,30 +12,34 @@ $user_id = $_SESSION['id'];
 $action = $_POST['action'] ?? '';
 
 // Fetch user's current alliance status for permission checks
-$sql_user_check = "SELECT alliance_id, alliance_rank FROM users WHERE id = ? FOR UPDATE";
+$sql_user_check = "SELECT alliance_id, alliance_rank FROM users WHERE id = ?";
 $stmt_check = mysqli_prepare($link, $sql_user_check);
 mysqli_stmt_bind_param($stmt_check, "i", $user_id);
 mysqli_stmt_execute($stmt_check);
 $user_alliance_info = mysqli_fetch_assoc(mysqli_stmt_get_result($stmt_check));
 mysqli_stmt_close($stmt_check);
-$user_alliance_id = $user_alliance_info['alliance_id'];
-$user_alliance_rank = $user_alliance_info['alliance_rank'];
+$user_alliance_id = $user_alliance_info['alliance_id'] ?? null;
+$user_alliance_rank = $user_alliance_info['alliance_rank'] ?? null;
 
 
-mysqli_begin_transaction($link);
+// The main logic does not need to be wrapped in a single transaction
+// as each action is independent and redirects.
+// We will manage transactions per action.
+
 try {
     // --- ACTION: CREATE ALLIANCE ---
     if ($action === 'create') {
-        // ... (existing create code is fine, no changes needed here) ...
+        // ... existing create code ...
     }
 
     // --- ACTION: EDIT ALLIANCE ---
     if ($action === 'edit') {
-        // ... (existing edit code is fine, no changes needed here) ...
+        // ... existing edit code ...
     }
 
     // --- ACTION: LEAVE ALLIANCE ---
     if ($action === 'leave') {
+        mysqli_begin_transaction($link);
         if (!$user_alliance_id) { throw new Exception("You are not in an alliance."); }
         if ($user_alliance_rank === 'Leader') { throw new Exception("You must pass leadership to another member before leaving."); }
 
@@ -45,13 +49,15 @@ try {
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
 
+        mysqli_commit($link);
         $_SESSION['alliance_message'] = "You have successfully left the alliance.";
         header("location: /alliance.php");
         exit;
     }
 
-    // --- ACTION: POST TO FORUM ---
+    // --- ACTION: POST TO FORUM (CORRECTED) ---
     if ($action === 'post_forum') {
+        mysqli_begin_transaction($link);
         $post_content = trim($_POST['post_content']);
         if (!$user_alliance_id) { throw new Exception("You must be in an alliance to post."); }
         if (empty($post_content)) { throw new Exception("Post content cannot be empty."); }
@@ -59,15 +65,22 @@ try {
         $sql = "INSERT INTO alliance_forum_posts (alliance_id, user_id, post_content) VALUES (?, ?, ?)";
         $stmt = mysqli_prepare($link, $sql);
         mysqli_stmt_bind_param($stmt, "iis", $user_alliance_id, $user_id, $post_content);
-        mysqli_stmt_execute($stmt);
+        
+        if (!mysqli_stmt_execute($stmt)) {
+            throw new Exception("Failed to save post. Please try again.");
+        }
         mysqli_stmt_close($stmt);
 
+        mysqli_commit($link); // Commit the transaction BEFORE redirecting
+
+        $_SESSION['alliance_message'] = "Your message has been posted.";
         header("location: /alliance.php?tab=forum");
         exit;
     }
 
     // --- LEADER ACTIONS: KICK, PROMOTE, DEMOTE ---
     if (in_array($action, ['kick', 'promote', 'demote'])) {
+        mysqli_begin_transaction($link);
         if ($user_alliance_rank !== 'Leader') { throw new Exception("You do not have permission to manage members."); }
         $member_id = (int)$_POST['member_id'];
         if ($member_id === $user_id) { throw new Exception("You cannot manage yourself."); }
@@ -100,10 +113,9 @@ try {
         }
         mysqli_stmt_execute($stmt);
         mysqli_stmt_close($stmt);
+        mysqli_commit($link);
     }
 
-
-    mysqli_commit($link);
     header("location: /alliance.php");
 
 } catch (Exception $e) {
@@ -113,6 +125,7 @@ try {
     $redirect_page = '/alliance.php';
     if ($action === 'create') $redirect_page = '/create_alliance.php';
     if ($action === 'edit') $redirect_page = '/edit_alliance.php';
+    if ($action === 'post_forum') $redirect_page = '/alliance.php?tab=forum';
     header("location: " . $redirect_page);
 }
 exit;
