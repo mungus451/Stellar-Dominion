@@ -45,6 +45,7 @@ $sub_nav_links = [
     ],
     'ALLIANCE' => [
         'Alliance Hub' => '/alliance.php',
+        'Structures' => '/alliance_structures.php', // <-- ADDED LINK
         'Recruitment' => '/alliance.php?tab=applications',
         'Roles & Permissions' => '/alliance_roles.php'
     ],
